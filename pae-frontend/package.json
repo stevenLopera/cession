@@ -6,7 +6,9 @@
     "react": "^16.6.1",
     "react-dom": "^16.6.1",
     "react-scripts": "2.0.5",
-    "react-web3": "^0.4.5"
+    "react-semantic-ui": "^0.2.0",
+    "react-web3": "^0.4.5",
+    "semantic-ui-css": "^2.4.1"
   },
   "scripts": {
     "start": "react-scripts start",
