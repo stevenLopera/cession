@@ -30,102 +30,44 @@ class Assignee extends Component {
 }
 
 // export default Assignee;
-
-
-
-
-/* eslint-disable react/no-multi-comp */
-/* Heads up! HomepageHeading uses inline styling, however it's not the best practice. Use CSS or styled components for
- * such things.
- */
-const HomepageHeading = ({ mobile }) => (
-  <Container>
-    <label
-      as=''
-      content=''
-      inverted
-      style={{
-        fontSize: mobile ? '2em' : '4em',
-        fontWeight: 'normal',
-        marginBottom: 0,
-        marginTop: mobile ? '1.5em' : '3em',
-      }}
-    />
-    <Header 
-      as='h2'
-      content='Do whatever you want when you want to.'
-      inverted
-      style={{
-        fontSize: mobile ? '1.5em' : '1.7em',
-        fontWeight: 'normal',
-        marginTop: mobile ? '0.5em' : '1.5em',
-      }}
-    />
-    <Button primary size='huge'>
-      Get Started
-      <Icon name='right arrow' />
-    </Button>
-  </Container>
-)
-
-HomepageHeading.propTypes = {
-  mobile: PropTypes.bool,
-}
-
 /* Heads up!
  * Neither Semantic UI nor Semantic UI React offer a responsive navbar, however, it can be implemented easily.
  * It can be more complicated, but you can create really flexible markup.
  */
 class DesktopContainer extends Component {
-  state = {}
+  state = {
+    isTramitShown: true
+  }
 
-  // hideFixedMenu = () => this.setState({ fixed: false })
-  // showFixedMenu = () => this.setState({ fixed: true })
+  onMenuOptionChange = () => {
+    this.setState({isTramitShown : !this.state.isTramitShown})
+  }
 
   render() {
     const { children } = this.props
-    const { fixed } = this.state
+    const { visible } = this.state
 
     return (
       <Responsive minWidth={Responsive.onlyTablet.minWidth}>
-        <Visibility
-          once={false}
-          onBottomPassed={this.showFixedMenu}
-          onBottomPassedReverse={this.hideFixedMenu}
-        >
-          <Segment
-            
-            // textAlign='center'
-            style={{ minHeight: 700, padding: '1em 0em' }}
-            horizontal
-          >
-            
-            <Grid style={{
-              minHeight : 700
-            }}>
-              <GridRow>
-                <GridColumn width={3}>
-                  <Segment inverted>
-                    <SideMenuVertical />
-                    </Segment>
-                </GridColumn>
-                <GridColumn width = {13}>
-                  <Container >
-                    <InvoiceForm />
-                    <InvoiceSearch />
-                  </Container>
-                </GridColumn>
-              </GridRow>
-            </Grid>
-
-
-          {/* <HomepageHeading /> */}
+        <Segment
+          style={{ minHeight: 600, padding: '1em 0em' }}>
+          <Grid>
+            <GridRow>
+              <GridColumn width={3}>
+                <Segment inverted style={{
+                  minHeight : 600
+                }}>
+                  <SideMenuVertical changeMenuOption = {this.onMenuOptionChange}/>
+                </Segment>
+              </GridColumn>
+              <GridColumn width = {13}>
+                <Container >
+                  {this.state.isTramitShown ? <InvoiceForm /> : <InvoiceSearch />}
+                </Container>
+              </GridColumn>
+            </GridRow>
+          </Grid>
         </Segment>
-
-
-        
-        </Visibility>
-
         {children}
       </Responsive>
     )
@@ -135,6 +77,7 @@ class DesktopContainer extends Component {
 DesktopContainer.propTypes = {
   children: PropTypes.node,
 }
+
 
 class MobileContainer extends Component {
   state = {}
@@ -191,7 +134,7 @@ class MobileContainer extends Component {
                   </Menu.Item>
                 </Menu>
               </Container>
-              <HomepageHeading mobile />
+              {/* <HomepageHeading mobile /> */}
             </Segment>
 
             {children}
@@ -207,11 +150,12 @@ MobileContainer.propTypes = {
 }
 
 class SideMenuVertical extends Component {
-  state = { activeItem: 'home' }
+  state = { activeItem: 'tramitar' }
 
   handleItemClick = (e, { name }) => {
     this.setState({ activeItem: name })
     //TODO: Open Tramit Component or Consultar component depending on the active item
+    this.props.changeMenuOption();
   }
 
   render() {
@@ -221,7 +165,7 @@ class SideMenuVertical extends Component {
       <Menu pointing secondary vertical inverted>
         <Menu.Item
           name='tramitar'
-          active={activeItem === 'tramitar'}
+          active={  activeItem === 'tramitar'}
           onClick={this.handleItemClick}
         />
         <Menu.Item
@@ -232,18 +176,19 @@ class SideMenuVertical extends Component {
       </Menu>
     )
   }
-
-  
 }
 
-
+SideMenuVertical.propTypes = {
+  changeMenuOption : PropTypes.func
+}
 
 class InvoiceForm extends Component {
   constructor(props) {
     super(props);
-    this.state = {invoiceNumber: '',
+    this.state = {
+                  invoiceNumber: '',
                   nif: '',
-                  amount: null,
+                  amount: '',
                   emissionDate: '',
                   expirationDate: ''
                 };
@@ -253,8 +198,11 @@ class InvoiceForm extends Component {
   }
 
   handleChange(event) {
+
+    console.log(event) 
+
     const target = event.target;
-    const value = target.value
+    const value = event.value ? event.value : target.value
     const name = target.name;
     
 
@@ -265,6 +213,7 @@ class InvoiceForm extends Component {
 
   handleSubmit(event) {
     //TODO: Upload invoice to the blockchain and Sign it
+    console.log(this.state)
   }
 
   render() {
@@ -299,9 +248,9 @@ class InvoiceForm extends Component {
         </Form.Field>
         <Form.Field>
           <label>Emission date</label>
-          <DateInput placeholder='MM/DD/AAAA'
+          <input placeholder='MM/DD/AAAA'
             name = 'emissionDate'
-            type = 'text'
+            type = 'date'
             value = {this.state.emissionDate}
             onChange = {this.handleChange}
             iconPosition = 'left'
@@ -309,9 +258,9 @@ class InvoiceForm extends Component {
         </Form.Field>
         <Form.Field>
           <label>Expiration date</label>
-          <DateInput placeholder='MM/DD/AAAA'
+          <input placeholder='MM/DD/AAAA'
             name = 'expirationDate'
-            type = 'text'
+            type = 'date'
             value = {this.state.expirationDate}
             onChange = {this.handleChange}
             iconPosition = 'left'
@@ -362,6 +311,7 @@ class InvoiceSearch extends Component{
     );
   }
 }
+
 
 
 const ResponsiveContainer = ({ children }) => (
