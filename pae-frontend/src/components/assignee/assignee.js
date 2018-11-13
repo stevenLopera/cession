@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import {
   Button,
   Container,
-  Divider,
+  Modal,
   Grid,
   Header,
   Icon,
@@ -13,7 +13,7 @@ import {
   Responsive,
   Segment,
   Sidebar,
-  Visibility,
+  Card,
   GridColumn,
   GridRow,
   Form
@@ -253,7 +253,6 @@ class InvoiceForm extends Component {
             type = 'date'
             value = {this.state.emissionDate}
             onChange = {this.handleChange}
-            iconPosition = 'left'
           />
         </Form.Field>
         <Form.Field>
@@ -263,7 +262,6 @@ class InvoiceForm extends Component {
             type = 'date'
             value = {this.state.expirationDate}
             onChange = {this.handleChange}
-            iconPosition = 'left'
           />
         </Form.Field>
         <Button className='primary' type='submit' onClick = {this.handleSubmit}>Upload invoice</Button>
@@ -277,7 +275,8 @@ class InvoiceSearch extends Component{
 
   constructor(props) {
     super(props);
-    this.state = {invoiceKey: ''};
+    this.state = {invoiceKey: '',
+                  hasResults: false};
 
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
@@ -288,27 +287,156 @@ class InvoiceSearch extends Component{
   }
 
   handleSubmit(event) {
-    alert('A key was submitted: ' + this.state.value);
+    //alert('A key was submitted: ' + this.state.invoiceKey);
     event.preventDefault();
     //TODO: Query the smart contract
     // add a loading spinner, hide the form and show result?
+    this.setState({
+      hasResults: true
+    })
   }
 
   render() {
     return (
-      <Form onSubmit={this.handleSubmit}>
-        <Form.Field>
-          <label>Invoice key</label>
-          <input placeholder='8c8182d1823ds123' 
-            name = 'invoiceKey'
-            value = {this.state.invoiceKey}
-            type = 'text'
-            onChange = {this.handleChange}
-          />
-        </Form.Field>
-        <Button className='primary' type='submit'>Search invoice</Button>
-      </Form>
-    );
+      <Container>
+        <Form onSubmit={this.handleSubmit}>
+          <Form.Field>
+            <label>Invoice key</label>
+            <input placeholder='8c8182d1823ds123' 
+              name = 'invoiceKey'
+              value = {this.state.invoiceKey}
+              type = 'text'
+              onChange = {this.handleChange}
+            />
+          </Form.Field>
+          <Button className='primary' type='submit'>Search invoice</Button>
+        </Form>,
+        <Container style = {{
+          marginTop: 20,
+          textAlign: 'center'
+        }}>
+          {this.state.hasResults ? <OffersResults results={[]}/> : null}
+        </Container>
+      </Container>
+    )
+  }
+}
+
+
+class OffersResults extends Component {
+
+  
+  constructor(props) {
+    super(props);
+    this.state = {
+      activeItem:'',
+      showModal: false
+    };
+  }
+
+  results = [{
+    name: 'Bankia',
+    comission: '3'
+  },
+  {
+    name: 'BBVA',
+    comission: '5'
+  },
+  {
+    name: 'La Caixa',
+    comission: '7'
+  }]
+
+  handleItemClick = (event) => {
+    // Only way found to detect the element clicked
+    const activeItem = event.target.parentNode.parentNode.id
+    
+    console.log(activeItem)
+    this.setState({
+      activeItem: activeItem,
+      showModal: true
+    })
+  }
+
+  showModal() {
+
+    const activeItem = this.results.find((item) => item.name === this.state.activeItem)
+    console.log(this.results);
+
+    if(activeItem) {
+      return (
+        <Modal
+         open = {this.state.showModal}
+           onClose = {() => this.setState({showModal: false})}
+        >
+          <Modal.Header>{activeItem.name}</Modal.Header>
+          <Modal.Content>
+            {/* <Image wrapped size='medium' src='https://react.semantic-ui.com/images/avatar/large/rachel.png' /> */}
+            <Modal.Description>
+              <Header>Offer details</Header>
+              <p>Comission = {activeItem.comission}%</p>
+              <p>Is it okay to use this photo?</p>
+            </Modal.Description>
+            <Button className='primary-green' onClick = {this.acceptActiveOffer}>Accept</Button>
+          </Modal.Content>
+        </Modal>
+      )
+    }
+  }
+
+  onModalClose() {
+    this.setState({
+      showModal: false
+    })
+  }
+
+  acceptActiveOffer() {
+    window.alert('Offer accepted')
+  }
+
+  render() {
+
+    // const {results} = this.props.results
+
+    const results = [{
+      name: 'Bankia',
+      comission: '3'
+    },
+    {
+      name: 'BBVA',
+      comission: '5'
+    },
+    {
+      name: 'La Caixa',
+      comission: '7'
+    }]
+
+
+    //TODO: Display cards according results found
+
+    const listItems = results.map((result) => 
+      <List.Item key= {result.name}>
+        <div id={result.name} onClick = {this.handleItemClick}>
+          <Card
+          // href='#'
+            as = 'a'
+            header={result.name}
+            meta='Bank'
+            description= {'Comission: '+ result.comission + '%'}
+            id = {result.name}
+          />  
+        </div>
+      </List.Item>
+    )
+    return(
+      <div style = {{
+        display: 'inline-block',
+        textAlign: "left"
+      }}>
+        <List items = {listItems} />
+        {this.showModal()}
+      </div>
+    )
   }
 }
 
