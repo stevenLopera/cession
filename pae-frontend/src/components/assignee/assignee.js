@@ -19,13 +19,9 @@ import {
   Form
 } from 'semantic-ui-react'  
 
-import {
-  DateInput
-} from 'semantic-ui-calendar-react';
-
 class Assignee extends Component {
   render() {
-    return <div>Assignee</div>;
+    return <ResponsiveContainer/>;
   }
 }
 
@@ -153,9 +149,10 @@ class SideMenuVertical extends Component {
   state = { activeItem: 'tramitar' }
 
   handleItemClick = (e, { name }) => {
-    this.setState({ activeItem: name })
-    //TODO: Open Tramit Component or Consultar component depending on the active item
-    this.props.changeMenuOption();
+    if (this.state.activeItem !== name) {
+      this.setState({ activeItem: name })
+      this.props.changeMenuOption();
+    }
   }
 
   render() {
@@ -310,7 +307,7 @@ class InvoiceSearch extends Component{
             />
           </Form.Field>
           <Button className='primary' type='submit'>Search invoice</Button>
-        </Form>,
+        </Form>
         <Container style = {{
           marginTop: 20,
           textAlign: 'center'
@@ -324,7 +321,6 @@ class InvoiceSearch extends Component{
 
 
 class OffersResults extends Component {
-
   
   constructor(props) {
     super(props);
@@ -453,10 +449,4 @@ ResponsiveContainer.propTypes = {
   children: PropTypes.node,
 }
 
-const HomepageLayout = () => (
-  <ResponsiveContainer>
-    
-  </ResponsiveContainer>
-)
-
-export default HomepageLayout
+export default Assignee

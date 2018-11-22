@@ -6,7 +6,7 @@ import HomepageLayout from './components/assignee';
 class App extends Component {
   render() {
     return (
-      <HomepageLayout></HomepageLayout>
+      <Assignee></Assignee>
     );
   }
 }
