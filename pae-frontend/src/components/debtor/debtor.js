@@ -15,6 +15,7 @@ import {
   Sidebar,
   Card,
   GridColumn,
+  Message,
   GridRow,
   Form
 } from 'semantic-ui-react'  
@@ -22,6 +23,8 @@ import 'semantic-ui-css/semantic.min.css';
 import {
   DateInput
 } from 'semantic-ui-calendar-react';
+//import Web3 from 'web3';
+//import { acceptHash } from '../../contractUtils/smartContractDebtor';
 
 class Debtor extends Component {
   render() {
@@ -193,7 +196,8 @@ class InvoiceForm extends Component {
       emissionDate: '',
       expirationDate: '',
       activeItem: '', 
-      showModal: false
+      showModal: false,
+      invoiceSended: false
     };
     //TODO: Confirm the fields needed
     this.handleChange = this.handleChange.bind(this);
@@ -235,6 +239,7 @@ class InvoiceForm extends Component {
 
   handleSubmit(event) {
     console.log(this.state)
+    //acceptHash();
   }
   showModal() {
 
@@ -274,7 +279,7 @@ class InvoiceForm extends Component {
                   name = 'invoiceNumber'
                   type = 'number'
                   value = {this.state.invoiceNumber}
-                  onChange = {this.handleChange}
+                  onChange = {this.handleChange}  
                 />
               </Form.Field>
               <Form.Field>
@@ -294,7 +299,7 @@ class InvoiceForm extends Component {
                   value = {this.state.emissionDate}
                   onChange = {this.handleChange}
                 />
-              </Form.Field>
+              </Form.Field>   
               <Form.Field>
                 <label>Expiration date</label>
                 <input placeholder='MM/DD/AAAA'
@@ -304,7 +309,7 @@ class InvoiceForm extends Component {
                   onChange = {this.handleChange}
                 />
               </Form.Field>
-              <Button className='primary' type='submit' onClick = {this.handleSubmit}>Send</Button>
+              <Button className='primary' type='submit' onClick = {() => this.sendInvoice(activeItem)}>Send</Button>
             </Form>
           </Modal.Content>
         </Modal>
@@ -316,6 +321,33 @@ class InvoiceForm extends Component {
       showModal: false
     })
   }
+  sendInvoice(form){
+    this.onModalClose()
+    this.setState({invoiceSended: true})
+    //añadir codigo para enviarlo a backend
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    //////////////////////////////////
+  }
+
+  showSuccessfullySendeMessage(){
+    return (<SuccessfullySendedInvoiceMsg nif = {this.state.nif} amount = {this.state.amount} invoiceNumber = {this.state.invoiceNumber} invoiceSended = {this.state.invoiceSended}></SuccessfullySendedInvoiceMsg>)
+    
+  }
+
   render() {
     const results = [{
       name: 'Pepe'
@@ -345,19 +377,104 @@ class InvoiceForm extends Component {
       }}>
         <List items = {listItems} />
         {this.showModal()}
+        <div style = {{textAlign: ''}}>
+              {this.state.invoiceSended ? <SuccessfullySendedInvoiceMsg nif = {this.state.nif} amount = {this.state.amount} invoiceNumber = {this.state.invoiceNumber} invoiceSended = {this.state.invoiceSended}></SuccessfullySendedInvoiceMsg> : null}
+            </div>
       </div>
     )
   }
 }
 
+class SuccessfullySendedInvoiceMsg extends Component{
+  state = {
+    invoiceSended : this.props.invoiceSended,
+    nif: this.props.nif,
+    amount: this.props.amount,
+    invoiceNumber: this.props.invoiceNumber
+  }
+
+  componentWillReceiveProps(nextProps) {
+    this.setState({ invoiceSended: nextProps.invoiceSended });  
+  }
+
+  handleChange(event) {
+    console.log(event.target)
+    this.setState({[event.target.name]: event.target.value})
+  }
+  render() {
+    
+    const MessageSended = () => (
+      <div style = {{marginTop: 30}}>
+        <Message
+          icon='check'
+          header='Invoice sent'
+          content='The invoice has been sent to the Blockchain.'
+          color = 'green'
+          style = {{textAlign: 'left'}}
+        />
+        <div style={{textAlign:'center'}}>
+          <div style = {{textAlign: 'left', display: 'inline-block'}}>
+            <Segment color = 'black' padded style = {{maxHeight: 600, maxWidth: 400}}>
+              <List>
+                <List.Item style = {{fontSize: 20}}>
+                  <List.Header>Invoice details</List.Header>
+                </List.Item>
+                <List.Item>
+                  <List.Icon name='users'/>
+                  <List.Content>NIF: {this.state.nif}</List.Content>
+                </List.Item>
+                <List.Item>
+                  <List.Icon name='euro'/>
+                  <List.Content>Amount: {this.state.amount}€</List.Content>
+                </List.Item>
+                <List.Item>
+                  <List.Icon name='file'/>
+                  <List.Content>Invoice Number: {this.state.invoiceNumber}</List.Content>
+                </List.Item>
+              </List>
+            </Segment>
+          </div>
+        </div>
+      </div>)
+
+    const MessageNotSended = () => (
+      <Message
+        icon='cancel'
+        header='Invoice not sent'
+        content='The invoice has not been sent to the Blockchain.'
+        color = 'red'
+      />
+    )
+      /* THIS IS HARDCODED, TO BE CHANGED WITH REAL INVOICE DATA 
+        
+        
+        
+
+    const MessageNotValidatedRequest = () => (
+      <Message
+        icon='cancel'
+        header='Request validation failed'
+        content='The request has not been validated.'
+        color = 'red'
+      />
+    )
+    */
+    
+    return(
+      <div style={{maxWidth: 1000, minWidth:1000}} >
+        {this.state.invoiceSended ? (<MessageSended />) : (<MessageNotSended />)}
+      </div>
+    )
+  }
+}
 
 class InvoiceSearch extends Component{
 
   constructor(props) {
     super(props);
     this.state = {KeyR: '',
-                  DirAcme: '',
-                  hasResults: false};
+                  DirAcme: '', //es necesaria?
+                  hasResults: false}; 
 
     this.handleChange = this.handleChange.bind(this);
     this.handleChange2 = this.handleChange2.bind(this);
@@ -388,7 +505,7 @@ class InvoiceSearch extends Component{
         <Form onSubmit={this.handleSubmit}>
           <Form.Field>
             <label>Key R</label>
-            <input placeholder='8c8182d1823ds123' 
+            <input placeholder='0x0569602dbc5e955286ac2765eb559213ad82da3e' 
               name = 'KeyR'
               value = {this.state.invoiceKey}
               type = 'text'
@@ -419,7 +536,7 @@ class InvoiceSearch extends Component{
 
 
 class FindPayments extends Component {
-
+  
   /*
   Buscar el pago con esa clave y a esa direccion
   */ 
