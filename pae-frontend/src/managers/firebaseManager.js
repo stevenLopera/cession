@@ -117,8 +117,8 @@ export function createInvoice(invoice){
             emisionDate: invoice.emissionDate,
             expirationDate: invoice.expirationDate
         },
-        toDebtorAccount: "String",
-        toCreditorAccount: "String",
+        toDebtorAccount: invoice.toDebtorAccount,
+        toCreditorAccount: invoice.toCreditorAccount,
         SCAddress: invoice.acmeSCAddress,
         KKey: "String",
         debtorAuth: false

@@ -41,9 +41,14 @@ class DesktopContainer extends Component {
     this.setState({isTramitShown : !this.state.isTramitShown})
   }
 
+  componentDidMount(){
+    this.getAcmeAddress()
+  }
+
   getAcmeAddress() {
     getAcmeSCAddress().then((address) => {
       this.setState({acmeSCAddress: address})
+      console.log(address)
     })
   }
  
@@ -222,13 +227,31 @@ class InvoiceForm extends Component {
   handleSubmit(event) {
     //TODO: Upload invoice to the blockchain and Sign it
     console.log(this.state)
-    createInvoice(this.state)
+    if(this.validateForm()){
+      createInvoice(this.state)
+    } else {
+      console.error('ERROR');
+    }
   }
 
   componentDidUpdate() {
     if (this.state.acmeSCAddress !== this.props.acmeSCAddress) {
       this.setState({acmeSCAddress: this.props.acmeSCAddress})
     }
+  }
+
+  validateForm(){
+    return(this.state.invoiceNumber && this.state.nif && this.state.amount && 
+      this.state.emissionDate && this.state.expirationDate && 
+      this.state.toDebtorAccount && this.state.toCreditorAccount && this.isAccountsValid())
+  }
+
+  isAccountsValid() {
+    var expression = /[a-zA-Z]{2}\d{2}\s?\d{4}\s?\d{4}\s?\d{4}\s?\d{4}\s?\d{4}/gm;
+
+    console.log(this.state.toCreditorAccount)
+    console.log(this.state.toDebtorAccount)
+    return false
   }
 
   render() {
