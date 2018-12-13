@@ -18,7 +18,7 @@ import {
   GridRow,
   Form
 } from 'semantic-ui-react'  
-import { getAcmeSCAddress } from '../../managers/firebaseManager';
+import { getAcmeSCAddress, createInvoice } from '../../managers/firebaseManager';
 
 class Assignee extends Component {
   render() {
@@ -195,7 +195,10 @@ class InvoiceForm extends Component {
                   nif: '',
                   amount: '',
                   emissionDate: '',
-                  expirationDate: ''
+                  expirationDate: '',
+                  toDebtorAccount: '',
+                  toCreditorAccount: '',
+                  acmeSCAddress: ''
                 };
     //TODO: Confirm the fields needed
     this.handleChange = this.handleChange.bind(this);
@@ -219,6 +222,13 @@ class InvoiceForm extends Component {
   handleSubmit(event) {
     //TODO: Upload invoice to the blockchain and Sign it
     console.log(this.state)
+    createInvoice(this.state)
+  }
+
+  componentDidUpdate() {
+    if (this.state.acmeSCAddress !== this.props.acmeSCAddress) {
+      this.setState({acmeSCAddress: this.props.acmeSCAddress})
+    }
   }
 
   render() {
@@ -266,6 +276,24 @@ class InvoiceForm extends Component {
             name = 'expirationDate'
             type = 'date'
             value = {this.state.expirationDate}
+            onChange = {this.handleChange}
+          />
+        </Form.Field>
+        <Form.Field>
+          <label>Debtor payment account</label>
+          <input placeholder='ESXX XXXX XXXX XXXX XXXX XXXX'
+            name = 'toDebtorAccount'
+            type = 'text'
+            value = {this.state.toDebtorAccount}
+            onChange = {this.handleChange}
+          />
+        </Form.Field>
+        <Form.Field>
+          <label>Creditor payment account</label>
+          <input placeholder='ESXX XXXX XXXX XXXX XXXX XXXX'
+            name = 'toCreditorAccount'
+            type = 'text'
+            value = {this.state.toCreditorAccount}
             onChange = {this.handleChange}
           />
         </Form.Field>

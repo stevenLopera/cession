@@ -1,4 +1,7 @@
 
+import  firebase  from '../config/fire';
+import { auth } from 'firebase';
+
 
 
 // This file will contain and export the functions to connect this project with firebase REALTIME DATABASE
@@ -14,70 +17,77 @@ export function uploadInvoice(data) {
 // now this function can be imported an called anywhere in the project
  
 
-var setText = document.getElementById("setText");
-var setButton = document.getElementById("setButton");
-var getButton = document.getElementById("getButton");
-var getValue = document.getElementById("getValue");
+// var setText = document.getElementById("setText");
+// var setButton = document.getElementById("setButton");
+// var getButton = document.getElementById("getButton");
+// var getValue = document.getElementById("getValue");
 
-function submitClick(){
+// function submitClick(){
     
-    var invoiceID = setterInvoice.value;
-    var updateThis =  
-        {
-            id: "ID de factura",
-            keyR: "Key R",
-            keyK: "Key K",
-            amount: "Cantidad en euros",
-            SCadress: "Direccion SC",
-            state: "1"
-        };
+//     var invoiceID = setterInvoice.value;
+//     var updateThis =  
+//         {
+//             id: "ID de factura",
+//             keyR: "Key R",
+//             keyK: "Key K",
+//             amount: "Cantidad en euros",
+//             SCadress: "Direccion SC",
+//             state: "1"
+//         };
         
-    // Get a reference to the database service
-    var firebaseRef = firebase.database().ref();
-    firebaseRef.child("Invoices/" + invoiceID).update(updateThis);
-    //firebaseRef.child("Text").set(setText.value);
-    //window.alert("Working...")
-}
+//     // Get a reference to the database service
+//     var firebaseRef = firebase.database().ref();
+//     firebaseRef.child("Invoices/" + invoiceID).update(updateThis);
+//     //firebaseRef.child("Text").set(setText.value);
+//     //window.alert("Working...")
+// }
 
-function getOnClick(){
+// function getOnClick(){
 
-    // Get a reference to the database service
-    var invoiceID = getterInvoice.value;
-    var firebaseRef = firebase.database().ref();
-    firebaseRef.once("value")
-        .then(function(snapshot) {
+//     // Get a reference to the database service
+//     var invoiceID = getterInvoice.value;
+//     var firebaseRef = firebase.database().ref();
+//     firebaseRef.once("value")
+//         .then(function(snapshot) {
         
-        snapshot.child("Invoices/").forEach(function(data) {
-            console.log(data.child("state").val());
-        });
+//         snapshot.child("Invoices/").forEach(function(data) {
+//             console.log(data.child("state").val());
+//         });
         
-        var data = snapshot.child("Invoices/" + invoiceID);
-        getValue.innerText = JSON.stringify(data);
-    });
-}
+//         var data = snapshot.child("Invoices/" + invoiceID);
+//         getValue.innerText = JSON.stringify(data);
+//     });
+// }
+
+
 
 
 
 
 // Returns fixed @ACME smart contract 
-function getAcmeSCAddress(){
+export function getAcmeSCAddress(){
     
     var firebaseRef = firebase.database().ref();
-    firebaseRef.once("value")
+    return firebaseRef.once("value")
         .then(function(snapshot) {
+
+            console.log('promise returned');
+            
                 
         var data = snapshot.child("constants/ACMESCAddress");
-        getValue.innerText = JSON.stringify(data);
+        return data.val()
     });
 }
 
+
 //Funcion para buscar facturas por NºFactura
-function getInvoiceByID(id){
+export function getInvoiceByID(id){
     var firebaseRef = firebase.database().ref();
     firebaseRef.once("value")
         .then(function(snapshot) {
+        snapshot.child(`unsignedInvoices/${id}`).val()
         snapshot.child("unsignedInvoices/").forEach(function(data) {
-            var invoiceID = data.val();
+            var invoiceID = data.child("data/invoiceID").val();
             if(invoiceID == id){                
                 //var json = JSON.stringify(data.child("data").val())
                 //console.log(json)
@@ -88,34 +98,35 @@ function getInvoiceByID(id){
     });
 }
 
+
 // Creates invoice using assignee form
-function createInvoice(){
-    
-    var invoiceID = setterInvoice.value;
+export function createInvoice(invoice){
+
+    let invoiceID = invoice.invoiceNumber
     
     var firebaseRef = firebase.database().ref();
     var updateThis =
     {
-        assigneeID: "String",
-        //Data es el conjunto que se le envia al Gobierno
+        assigneeID: firebase.auth().currentUser.uid,
+        // Data es el conjunto que se le envia al Gobierno
         data: {
             RKey: "String",
-            NIF: "String",
-            amount: "Double",
-            invoiceID: "String",
-            emisionDate: "String",
-            emisionDate: "String"
+            NIF: invoice.nif,
+            amount: invoice.amount,
+            invoiceID: invoiceID,
+            emisionDate: invoice.emissionDate,
+            expirationDate: invoice.expirationDate
         },
         toDebtorAccount: "String",
         toCreditorAccount: "String",
-        SCAddress: "String",
+        SCAddress: invoice.acmeSCAddress,
         KKey: "String",
-        debtorAuth: "false"
+        debtorAuth: false
     };
-    firebaseRef.child("unsignedInvoices/" + invoiceID).update(updateThis);
+    return firebaseRef.child("unsignedInvoices/" + invoiceID).update(updateThis).then((data) => {return data});
      
 }
-
+ 
 // Debtor/Bank gets invoices in function of "s"(true","false")
 function getInvoicesList(s){
     
@@ -156,6 +167,8 @@ function getInvoicesList(s){
         
     });
 }
+/*
+
 //IDEA: Borrar la JSON generada anteriormente cuando el banco publica 
 //su dataset privada.
 function deleteInvoiceByInvoiceID(id, collection){
@@ -185,8 +198,7 @@ function acceptInvoiceSigned(){
             comission: comission
             ACMEaccount: acmeAccount
             //Se tiene que cifraf con K toda la JSON
-        },*/
-        bankAccount: "String",
+        },        bankAccount: "String",
         bankSign: "String"
 
     };
@@ -239,3 +251,4 @@ function getInvoiceByUserID(id, collection){
         
     });
 }
+*/
