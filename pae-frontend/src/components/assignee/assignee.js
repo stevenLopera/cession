@@ -18,6 +18,7 @@ import {
   GridRow,
   Form
 } from 'semantic-ui-react'  
+import { getAcmeSCAddress } from '../../managers/firebaseManager';
 
 class Assignee extends Component {
   render() {
@@ -32,13 +33,20 @@ class Assignee extends Component {
  */
 class DesktopContainer extends Component {
   state = {
-    isTramitShown: true
+    isTramitShown: true,
+    acmeSCAddress: ''
   }
 
   onMenuOptionChange = () => {
     this.setState({isTramitShown : !this.state.isTramitShown})
   }
 
+  getAcmeAddress() {
+    getAcmeSCAddress().then((address) => {
+      this.setState({acmeSCAddress: address})
+    })
+  }
+ 
   render() {
     const { children } = this.props
     const { visible } = this.state
@@ -58,7 +66,7 @@ class DesktopContainer extends Component {
               </GridColumn>
               <GridColumn width = {13}>
                 <Container >
-                  {this.state.isTramitShown ? <InvoiceForm /> : <InvoiceSearch />}
+                  {this.state.isTramitShown ? <InvoiceForm acmeSCAddress = {this.state.acmeSCAddress}/> : <InvoiceSearch />}
                 </Container>
               </GridColumn>
             </GridRow>
