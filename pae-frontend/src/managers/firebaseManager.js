@@ -13,3 +13,229 @@ export function uploadInvoice(data) {
 
 // now this function can be imported an called anywhere in the project
  
+
+var setText = document.getElementById("setText");
+var setButton = document.getElementById("setButton");
+var getButton = document.getElementById("getButton");
+var getValue = document.getElementById("getValue");
+
+function submitClick(){
+    
+    var invoiceID = setterInvoice.value;
+    var updateThis =  
+        {
+            id: "ID de factura",
+            keyR: "Key R",
+            keyK: "Key K",
+            amount: "Cantidad en euros",
+            SCadress: "Direccion SC",
+            state: "1"
+        };
+        
+    // Get a reference to the database service
+    var firebaseRef = firebase.database().ref();
+    firebaseRef.child("Invoices/" + invoiceID).update(updateThis);
+    //firebaseRef.child("Text").set(setText.value);
+    //window.alert("Working...")
+}
+
+function getOnClick(){
+
+    // Get a reference to the database service
+    var invoiceID = getterInvoice.value;
+    var firebaseRef = firebase.database().ref();
+    firebaseRef.once("value")
+        .then(function(snapshot) {
+        
+        snapshot.child("Invoices/").forEach(function(data) {
+            console.log(data.child("state").val());
+        });
+        
+        var data = snapshot.child("Invoices/" + invoiceID);
+        getValue.innerText = JSON.stringify(data);
+    });
+}
+
+
+
+
+// Returns fixed @ACME smart contract 
+function getAcmeSCAddress(){
+    
+    var firebaseRef = firebase.database().ref();
+    firebaseRef.once("value")
+        .then(function(snapshot) {
+                
+        var data = snapshot.child("constants/ACMESCAddress");
+        getValue.innerText = JSON.stringify(data);
+    });
+}
+
+//Funcion para buscar facturas por NºFactura
+function getInvoiceByID(id){
+    var firebaseRef = firebase.database().ref();
+    firebaseRef.once("value")
+        .then(function(snapshot) {
+        snapshot.child("unsignedInvoices/").forEach(function(data) {
+            var invoiceID = data.val();
+            if(invoiceID == id){                
+                //var json = JSON.stringify(data.child("data").val())
+                //console.log(json)
+                console.log(data.val())
+            }
+        });
+        
+    });
+}
+
+// Creates invoice using assignee form
+function createInvoice(){
+    
+    var invoiceID = setterInvoice.value;
+    
+    var firebaseRef = firebase.database().ref();
+    var updateThis =
+    {
+        assigneeID: "String",
+        //Data es el conjunto que se le envia al Gobierno
+        data: {
+            RKey: "String",
+            NIF: "String",
+            amount: "Double",
+            invoiceID: "String",
+            emisionDate: "String",
+            emisionDate: "String"
+        },
+        toDebtorAccount: "String",
+        toCreditorAccount: "String",
+        SCAddress: "String",
+        KKey: "String",
+        debtorAuth: "false"
+    };
+    firebaseRef.child("unsignedInvoices/" + invoiceID).update(updateThis);
+     
+}
+
+// Debtor/Bank gets invoices in function of "s"(true","false")
+function getInvoicesList(s){
+    
+    var firebaseRef = firebase.database().ref();
+    firebaseRef.once("value")
+        .then(function(snapshot) {
+        var comission = snapshot.child("constants/ACMEComission").val();
+            console.log(comission);
+        snapshot.child("unsignedInvoices/").forEach(function(data) {
+            var debtorAuth = data.child("debtorAuth").val();
+            if(debtorAuth == s){
+                //Falta por definir qué develvemos para montar la vista.
+                //Seguramente todo el data
+                switch(s){
+                    case "false": 
+                    //case debtor, enviar el hash del dataset a la BC sin guardarlo en FB
+
+                        var json = JSON.stringify(data.child("data").val())
+                        console.log(json)
+      
+                        break;
+                    case "true": 
+                    //case creditor, comprueba si el hash del dataset esta en la BC
+
+                        var dataSet = {
+                                "KKey": data.child("KKey").val(),
+                                "SCAddress": data.child("SCAddress").val(),
+                                "toCreditorAccount": data.child("toCreditorAccount").val(),
+                                "data": (data.child("data").val())
+                        }
+                        var json = JSON.stringify(dataSet)
+                        console.log(json)
+                        
+                        break;
+                }
+            }
+        });
+        
+    });
+}
+//IDEA: Borrar la JSON generada anteriormente cuando el banco publica 
+//su dataset privada.
+function deleteInvoiceByInvoiceID(id, collection){
+    //collection se le puede pasar signed o unsigned para decidir de donde descarga
+    var firebaseRef = firebase.database().ref();
+    firebaseRef.child(collection + "Invoices/"+ id).remove();
+}
+
+// Creates new invoice collection accepted by the debtor and bank.
+function acceptInvoiceSigned(){
+    
+    var invoiceID = setterInvoice.value;
+    
+    var firebaseRef = firebase.database().ref();
+    var comission = firebaseRef.once("constants/ACMEComission").val();
+    var acmeAccount = firebaseRef.once("constants/ACMEAccount").val();
+
+    var updateThis =
+    {   
+        InvoiceID: "String",
+        data : "String",
+        /*data:{
+            invoiceID: "String",  
+            NIF: "String",
+            amount: "Double",//Amount - comissions  
+            toCreditorAccount: "String"
+            comission: comission
+            ACMEaccount: acmeAccount
+            //Se tiene que cifraf con K toda la JSON
+        },*/
+        bankAccount: "String",
+        bankSign: "String"
+
+    };
+    firebaseRef.child("signedInvoices/" + invoiceID).update(updateThis);
+}
+
+//Funcion para buscar facturas por NºFactura
+function getInvoiceByInvoiceID(id, collection){
+    //collection se le puede pasar signed o unsigned para decidir de donde descarga
+    var firebaseRef = firebase.database().ref();
+    firebaseRef.once("value")
+        .then(function(snapshot) {
+        snapshot.child(collection + "Invoices/").forEach(function(data) {
+            var invoiceID = data.val();
+            if(invoiceID == id){                
+                //var json = JSON.stringify(data.child("data").val())
+                //console.log(json)
+                console.log(data.val())
+            }
+        });
+        
+    });
+}
+
+// El assignee firma el dataset después de confirmar la info.
+function acceptInvoiceSigned(){
+    
+    var invoiceID = setterInvoice.value;   
+    var firebaseRef = firebase.database().ref();
+    var updateThis =
+    {     
+        assigneSign: "String"
+    };
+    firebaseRef.child("signedInvoices/" + invoiceID).update(updateThis);
+}
+
+
+function getInvoiceByUserID(id, collection){
+    var firebaseRef = firebase.database().ref();
+    firebaseRef.once("value")
+        .then(function(snapshot) {
+        snapshot.child(collection + "Invoices/").forEach(function(data) {
+            var assigneeID = data.val();
+            if(assigneeID == id){                
+                //var json = JSON.stringify(data.child("data").val())
+                //console.log(json)
+                console.log(data.val())
+            }
+        });
+        
+    });
+}
