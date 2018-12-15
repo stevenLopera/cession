@@ -79,6 +79,17 @@ export function getAcmeSCAddress(){
     });
 }
 
+// Generar Public Key pb_k for the bank and set
+//let R = new TextDecoder("utf-8").decode(nacl.randomBytes(32));
+// Returns fixed Bank Public Key 
+function getBankPublicKey(){
+    var firebaseRef = firebase.database().ref();
+    firebaseRef.once("value")
+        .then(function(snapshot) {
+                
+        return snapshot.child("constants/publicKey");
+    });
+}
 
 //Funcion para buscar facturas por NºFactura
 export function getInvoiceByID(id){
