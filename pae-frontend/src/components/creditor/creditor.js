@@ -17,6 +17,7 @@ import {
   Message,
   Header
 } from 'semantic-ui-react'  
+import { getInvoicesList} from '../../managers/firebaseManager';
 
 class Creditor extends Component {
   render() {
@@ -115,6 +116,7 @@ class RequestsComponent extends Component {
       showValidationMessage: false,
       isRequestValidated: false,
       hasRequests: false,
+      isLoading: true,
       requests: []
     } 
     // this.getRequests().bind(this)
@@ -125,7 +127,15 @@ class RequestsComponent extends Component {
   }
 
   getRequests() {
-    // TODO: get requests from SM???
+    // TODO: get requests from SC???
+    getInvoicesList('creditor').then((res) => {
+      this.setState({
+        requests: res,
+        isLoading: false
+      })
+      console.log('promise returned');
+    
+    })
     this.setState({
       hasRequests: true, 
       requests: [
@@ -215,18 +225,24 @@ class RequestsComponent extends Component {
 
   render() {
 
+    var listItems = null
 
-      const listItems = this.state.requests.map((result) => 
-        <List.Item key= {result.assigneeName}>
-          <div id={result.assigneeName} onClick = {this.handleItemClick}>
+    if (this.state.requests) {
+      const list = this.state.requests
+      console.log(this.state.requests);
+      
+      listItems = list.map((result) => 
+        <List.Item key= {result.data.invoiceID}>
+          <div id={result.data.invoiceID} onClick = {this.handleItemClick}>
             <Card
               as = 'a'
-              header={result.assigneeName}
-              id = {result.assigneeName}
+              header={result.data.invoiceID}
+              id = {result.data.invoiceID}
             />  
           </div>
         </List.Item>
       )
+    }
 
       const EmptyRequests = () => (
         <Segment placeholder style={{minHeight: 600}}>

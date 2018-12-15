@@ -158,11 +158,16 @@ export function getInvoicesList(typeList){
                 console.log(toDebtorList)
       
             } else {
-                toCreditorList[j] = data.child("data").val()
+                toCreditorList[j] = {
+                    KKey: data.child("KKey").val(),
+                    SCAddress: data.child("SCAddress").val(),
+                    toCreditorAccount: data.child("toCreditorAccount").val(),
+                    data: (data.child("data").val())
+            }
                 j++
             }
 
-    
+
         });
         
         switch(typeList) {
