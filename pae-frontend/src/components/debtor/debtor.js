@@ -17,12 +17,15 @@ import {
   GridColumn,
   Message,
   GridRow,
-  Form
+  Form,
+  Dimmer,
+  Loader
 } from 'semantic-ui-react'  
 import 'semantic-ui-css/semantic.min.css';
 import {
   DateInput
 } from 'semantic-ui-calendar-react';
+import { getInvoicesList } from '../../managers/firebaseManager';
 //import Web3 from 'web3';
 //import { acceptHash } from '../../contractUtils/smartContractDebtor';
 
@@ -215,12 +218,14 @@ class InvoiceForm extends Component {
 
   handleItemClick = (event) => {
     // Only way found to detect the element clicked
-    const activeItem = event.target.parentNode.parentNode.id
+    const activeItemName = event.target.parentNode.parentNode.id
     
-    console.log(activeItem)
+
+    console.log(activeItemName)
     this.setState({
-      activeItem: activeItem,
-      showModal: true
+      activeItem: activeItemName,
+      showModal: true,
+      results: [],
     })
   }
   handleChange(event) {
@@ -237,15 +242,30 @@ class InvoiceForm extends Component {
     });
   }
 
+  componentDidMount(){
+    getInvoicesList('debtor').then((res) => {
+      this.setState({
+        results: res,
+        isLoading: false
+      })
+      console.log('promise returned');
+      
+    })
+  }
+
   handleSubmit(event) {
     console.log(this.state)
+    
     //acceptHash();
   }
   showModal() {
+    let activeItem
+    const results = this.state.results
 
-    const activeItem = this.results.find((item) => item.name === this.state.activeItem)
-    console.log(this.results);
-
+    if (this.state.results) {
+      const activeItem = results.find((item) => item.invoiceID === this.state.activeItem)
+      console.log(this.state.results);
+    }
     if(activeItem) {
       return (
         <Modal
@@ -349,32 +369,73 @@ class InvoiceForm extends Component {
   }
 
   render() {
-    const results = [{
-      name: 'Pepe'
-    },
-    {
-      name: 'Maria'
-    },
-    {
-      name: 'Juanito'
-    }]
+    var listItems = null
 
-    const listItems = results.map((result) => 
-      <List.Item key= {result.name}>
-        <div id={result.name} onClick = {this.handleItemClick}>
-          <Card
-            as = 'a'
-            header={result.name}
-            id = {result.name}
-          />  
+    if (this.state.results) {
+      const list = this.state.results
+      console.log(this.state.results);
+      
+      listItems = list.map((result) => 
+        <List.Item key= {result.invoiceID}>
+          <div id={result.invoiceID} onClick = {this.handleItemClick}>
+            <Card
+              as = 'a'
+              header={result.invoiceID}
+              id = {result.invoiceID}
+            />  
+          </div>
+        </List.Item>
+      )
+    }
+
+    const InvoiceData = (
+      <div style={{textAlign:'center'}}>
+          <div style = {{textAlign: 'left', display: 'inline-block'}}>
+            <Segment color = 'black' padded style = {{maxHeight: 400, maxWidth: 250}}>
+              <List>
+                <List.Item style = {{fontSize: 20}}>
+                  <List.Header>{this.state.activeItem.invoiceID}</List.Header>
+                </List.Item>
+                <List.Item>
+                  <List.Icon name='euro' />
+                  <List.Content>Amount: {this.state.activeItem.amount}</List.Content>
+                </List.Item>
+                <List.Item>
+                  <List.Icon name='calendar alternate outline' />
+                  <List.Content>
+                    Emission date: {this.state.activeItem.emissionDate}
+                  </List.Content>
+                </List.Item>
+                <List.Item>
+                  <List.Icon name='calendar times outline' />
+                  <List.Content>
+                    Expiration date: {this.state.activeItem.expirationDate}
+                  </List.Content>
+                </List.Item>
+                <List.Item>
+                  <List.Icon name='id card outline' />
+                  <List.Content>
+                    NIF: {this.state.activeItem.NIF}
+                  </List.Content>
+                </List.Item>
+              </List>
+            </Segment>
+          </div>
         </div>
-      </List.Item>
+
     )
+
     return(
       <div style = {{
         display: 'inline-block',
         textAlign: "left"
       }}>
+        {this.state.isLoading ? 
+          <Dimmer active>
+            <Loader></Loader>
+          </Dimmer>
+        :
+        null}
         <List items = {listItems} />
         {this.showModal()}
         <div style = {{textAlign: ''}}>

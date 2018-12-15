@@ -228,9 +228,11 @@ class InvoiceForm extends Component {
     //TODO: Upload invoice to the blockchain and Sign it
     console.log(this.state)
     if(this.validateForm()){
-      createInvoice(this.state)
+      createInvoice(this.state).then(() => {
+        window.alert('Successfully uploaded invoice')
+      }).catch((error) => (console.error(error)))
     } else {
-      console.error('ERROR');
+      window.alert('Please fill the form correctly')
     }
   }
 
@@ -247,11 +249,12 @@ class InvoiceForm extends Component {
   }
 
   isAccountsValid() {
-    var expression = /[a-zA-Z]{2}\d{2}\s?\d{4}\s?\d{4}\s?\d{4}\s?\d{4}\s?\d{4}/gm;
+    var expressionCreditor = /[a-zA-Z]{2}\d{2}\s?\d{4}\s?\d{4}\s?\d{4}\s?\d{4}\s?\d{4}/gm;
+    var expressionDebtor = /[a-zA-Z]{2}\d{2}\s?\d{4}\s?\d{4}\s?\d{4}\s?\d{4}\s?\d{4}/gm;
 
-    console.log(this.state.toCreditorAccount)
-    console.log(this.state.toDebtorAccount)
-    return false
+    const isCreditorValid = expressionCreditor.test(this.state.toCreditorAccount)
+    const isDebtorValid = expressionDebtor.test(this.state.toDebtorAccount)
+    return isCreditorValid && isDebtorValid
   }
 
   render() {

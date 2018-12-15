@@ -128,43 +128,55 @@ export function createInvoice(invoice){
 }
  
 // Debtor/Bank gets invoices in function of "s"(true","false")
-function getInvoicesList(s){
+export function getInvoicesList(typeList){
+
+    const isProcessed = false
     
+
+    // typeList === 'debtor' ? isDebtor = true : 
+
+    var toDebtorList = []
+    var toCreditorList = []
+
     var firebaseRef = firebase.database().ref();
-    firebaseRef.once("value")
+    return firebaseRef.once("value")
         .then(function(snapshot) {
         var comission = snapshot.child("constants/ACMEComission").val();
             console.log(comission);
+
+        // const invoiceList = snapshot.child("unsignedInvoices/").val().find((invoice) => invoice.debtorAuth === false) 
+        // console.log(invoiceList);
+        
+        var i = 0
         snapshot.child("unsignedInvoices/").forEach(function(data) {
             var debtorAuth = data.child("debtorAuth").val();
-            if(debtorAuth == s){
+            if(debtorAuth == false){
                 //Falta por definir qué develvemos para montar la vista.
                 //Seguramente todo el data
-                switch(s){
-                    case "false": 
+                 
                     //case debtor, enviar el hash del dataset a la BC sin guardarlo en FB
 
-                        var json = JSON.stringify(data.child("data").val())
-                        console.log(json)
+                var json = JSON.stringify(data.child("data").val())
+                toDebtorList[i] = data.child("data").val()
+                i++
+                console.log(toDebtorList)
       
-                        break;
-                    case "true": 
-                    //case creditor, comprueba si el hash del dataset esta en la BC
-
-                        var dataSet = {
-                                "KKey": data.child("KKey").val(),
-                                "SCAddress": data.child("SCAddress").val(),
-                                "toCreditorAccount": data.child("toCreditorAccount").val(),
-                                "data": (data.child("data").val())
-                        }
-                        var json = JSON.stringify(dataSet)
-                        console.log(json)
-                        
-                        break;
-                }
+            } else {
+                toCreditorList[i] = data.child("data").val()
+                i++
             }
+
+    
         });
         
+        switch(typeList) {
+            case 'debtor':
+                return toDebtorList
+            case 'creditor':
+                return toCreditorList
+            default:
+                return null
+        }
     });
 }
 /*
