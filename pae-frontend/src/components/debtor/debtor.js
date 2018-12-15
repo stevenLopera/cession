@@ -26,6 +26,7 @@ import {
   DateInput
 } from 'semantic-ui-calendar-react';
 import { getInvoicesList, resolveInvoice } from '../../managers/firebaseManager';
+//import { sha3_512 } from 'js-sha3';
 //import Web3 from 'web3';
 //import { acceptHash } from '../../contractUtils/smartContractDebtor';
 
@@ -276,65 +277,6 @@ class InvoiceForm extends Component {
               <Button className='red' onClick = {() => this.resolveActiveInvoice(false)}><Icon name='cancel' />Reject invoice</Button>
             </div>
           </Modal.Content>
-          
-          {/* <Modal.Content>
-            <Form>
-              <Form.Field>
-                <label>CIF/NIF</label>
-                <input placeholder='11111111A' 
-                  name = 'nif'
-                  type = 'text'
-                  value = {this.state.nif}
-                  onChange = {this.handleChange}
-                />
-              </Form.Field>
-              <Form.Field>
-                <label>Total amount</label>
-                <input placeholder='150.5' 
-                  name = 'amount'
-                  type = 'number'
-                  value = {this.state.amount}
-                  onChange = {this.handleChange}
-                />
-              </Form.Field>
-              <Form.Field>
-                <label>Invoice number</label>
-                <input placeholder='Invoice number'
-                  name = 'invoiceNumber'
-                  type = 'number'
-                  value = {this.state.invoiceNumber}
-                  onChange = {this.handleChange}  
-                />
-              </Form.Field>
-              <Form.Field>
-                <label>Key R</label>
-                <input placeholder='37fh4j58k3j' 
-                  name = 'keyR'
-                  type = 'text'
-                  value = {this.state.keyR}
-                  onChange = {this.handleChange}
-                />
-              </Form.Field>
-              <Form.Field>
-                <label>Emission date</label>
-                <input placeholder='MM/DD/AAAA'
-                  name = 'emissionDate'
-                  type = 'date'
-                  value = {this.state.emissionDate}
-                  onChange = {this.handleChange}
-                />
-              </Form.Field>   
-              <Form.Field>
-                <label>Expiration date</label>
-                <input placeholder='MM/DD/AAAA'
-                  name = 'expirationDate'
-                  type = 'date'
-                  value = {this.state.expirationDate}
-                  onChange = {this.handleChange}
-                />
-              </Form.Field>
-              <Button className='primary' type='submit' onClick = {() => this.sendInvoice(activeItem)}>Send</Button>
-            </Form> */}
         </Modal>
       )
        
@@ -350,6 +292,7 @@ class InvoiceForm extends Component {
     this.onModalClose()
 
     this.setState({isLoading: true})
+    //var hash = keccak256.update(invoice);
     
     resolveInvoice(this.state.activeItem.invoiceID).then(() => {
       console.log('invoiceResolved')
