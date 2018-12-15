@@ -114,7 +114,7 @@ export function createInvoice(invoice){
             NIF: invoice.nif,
             amount: invoice.amount,
             invoiceID: invoiceID,
-            emisionDate: invoice.emissionDate,
+            emissionDate: invoice.emissionDate,
             expirationDate: invoice.expirationDate
         },
         toDebtorAccount: invoice.toDebtorAccount,
@@ -130,11 +130,6 @@ export function createInvoice(invoice){
 // Debtor/Bank gets invoices in function of "s"(true","false")
 export function getInvoicesList(typeList){
 
-    const isProcessed = false
-    
-
-    // typeList === 'debtor' ? isDebtor = true : 
-
     var toDebtorList = []
     var toCreditorList = []
 
@@ -148,6 +143,7 @@ export function getInvoicesList(typeList){
         // console.log(invoiceList);
         
         var i = 0
+        var j = 0
         snapshot.child("unsignedInvoices/").forEach(function(data) {
             var debtorAuth = data.child("debtorAuth").val();
             if(debtorAuth == false){
@@ -162,8 +158,8 @@ export function getInvoicesList(typeList){
                 console.log(toDebtorList)
       
             } else {
-                toCreditorList[i] = data.child("data").val()
-                i++
+                toCreditorList[j] = data.child("data").val()
+                j++
             }
 
     
@@ -179,6 +175,14 @@ export function getInvoicesList(typeList){
         }
     });
 }
+
+export function resolveInvoice(invoiceID){
+    // Get a reference to the database service
+    var firebaseRef = firebase.database().ref();
+    return firebaseRef.child("unsignedInvoices").child(invoiceID).update({debtorAuth: true});
+}
+
+
 /*
 
 //IDEA: Borrar la JSON generada anteriormente cuando el banco publica 
@@ -234,6 +238,7 @@ function getInvoiceByInvoiceID(id, collection){
         
     });
 }
+
 
 // El assignee firma el dataset después de confirmar la info.
 function acceptInvoiceSigned(){

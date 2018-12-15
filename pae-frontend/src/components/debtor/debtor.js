@@ -25,7 +25,7 @@ import 'semantic-ui-css/semantic.min.css';
 import {
   DateInput
 } from 'semantic-ui-calendar-react';
-import { getInvoicesList } from '../../managers/firebaseManager';
+import { getInvoicesList, resolveInvoice } from '../../managers/firebaseManager';
 //import Web3 from 'web3';
 //import { acceptHash } from '../../contractUtils/smartContractDebtor';
 
@@ -198,34 +198,31 @@ class InvoiceForm extends Component {
       keyR: '',
       emissionDate: '',
       expirationDate: '',
-      activeItem: '', 
+      activeItem: {}, 
       showModal: false,
-      invoiceSended: false
+      invoiceSended: false,
+      results: [],
+      isLoading: true,
+      isResolved: false
     };
     //TODO: Confirm the fields needed
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
+    this.resolveActiveInvoice = this.resolveActiveInvoice.bind(this)
+    this.getInvoices = this.getInvoices.bind(this)
   }
-  results = [{
-    name: 'Pepe'
-  },
-  {
-    name: 'Maria'
-  },
-  {
-    name: 'Juanito'
-  }]
 
   handleItemClick = (event) => {
     // Only way found to detect the element clicked
     const activeItemName = event.target.parentNode.parentNode.id
     
+    const activeItem = this.state.results.find((item) => item.invoiceID === activeItemName)
 
-    console.log(activeItemName)
+    console.log(activeItem);
+    
     this.setState({
-      activeItem: activeItemName,
+      activeItem: activeItem,
       showModal: true,
-      results: [],
     })
   }
   handleChange(event) {
@@ -242,7 +239,7 @@ class InvoiceForm extends Component {
     });
   }
 
-  componentDidMount(){
+  getInvoices() {
     getInvoicesList('debtor').then((res) => {
       this.setState({
         results: res,
@@ -253,27 +250,34 @@ class InvoiceForm extends Component {
     })
   }
 
+  componentDidMount(){
+    this.getInvoices()
+  }
+
   handleSubmit(event) {
     console.log(this.state)
     
     //acceptHash();
   }
   showModal() {
-    let activeItem
-    const results = this.state.results
+    console.log(this.state);
 
-    if (this.state.results) {
-      const activeItem = results.find((item) => item.invoiceID === this.state.activeItem)
-      console.log(this.state.results);
-    }
-    if(activeItem) {
+    if(this.state.activeItem) {
       return (
         <Modal
          open = {this.state.showModal}
            onClose = {() => this.setState({showModal: false})}
         >
-          <Modal.Header>Tramites para {activeItem.name}</Modal.Header>
+          <Modal.Header>Invoice details</Modal.Header>
           <Modal.Content>
+            {this.getInvoiceDetailsView()}
+            <div style={{marginTop: 30, textAlign:'right'}}>
+              <Button className='green' onClick = {() => this.resolveActiveInvoice(true)}><Icon name='check' />Accept invoice</Button>
+              <Button className='red' onClick = {() => this.resolveActiveInvoice(false)}><Icon name='cancel' />Reject invoice</Button>
+            </div>
+          </Modal.Content>
+          
+          {/* <Modal.Content>
             <Form>
               <Form.Field>
                 <label>CIF/NIF</label>
@@ -330,43 +334,87 @@ class InvoiceForm extends Component {
                 />
               </Form.Field>
               <Button className='primary' type='submit' onClick = {() => this.sendInvoice(activeItem)}>Send</Button>
-            </Form>
-          </Modal.Content>
+            </Form> */}
         </Modal>
       )
+       
     }
   }
   onModalClose() {
     this.setState({
-      showModal: false
+      showModal: false,
     })
   }
-  sendInvoice(form){
+
+  resolveActiveInvoice(isAccepted){
     this.onModalClose()
-    this.setState({invoiceSended: true})
-    //añadir codigo para enviarlo a backend
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    //////////////////////////////////
-  }
-
-  showSuccessfullySendeMessage(){
-    return (<SuccessfullySendedInvoiceMsg nif = {this.state.nif} amount = {this.state.amount} invoiceNumber = {this.state.invoiceNumber} invoiceSended = {this.state.invoiceSended}></SuccessfullySendedInvoiceMsg>)
+    this.setState({isLoading: true})
     
+    resolveInvoice(this.state.activeItem.invoiceID).then(() => {
+      console.log('invoiceResolved')
+      this.setState({
+        invoiceSended: isAccepted,
+        isResolved: true
+      })
+      this.getInvoices()
+    }).catch((err) => {
+      console.error(err);
+    })
   }
+
+  showSuccessfullySendedMessage(){
+    let nifAux = this.state.activeItem.NIF
+    let amountAux = this.state.activeItem.amount
+    let invoiceIDAux = this.state.activeItem.invoiceID
+
+    return (<SuccessfullySendedInvoiceMsg nif = {nifAux} amount = {amountAux} invoiceNumber = {invoiceIDAux} invoiceSended = {this.state.invoiceSended}></SuccessfullySendedInvoiceMsg>)
+  }
+
+  onMessageShown() {
+    // reset activeItem
+    this.setState({
+      activeItem: {}
+    })
+  }
+
+  getInvoiceDetailsView = () => (
+    
+    <div style={{textAlign:'center'}}>
+        <div style = {{textAlign: 'left', display: 'inline-block'}}>
+          <Segment color = 'black' padded style = {{maxHeight: 400, maxWidth: 250}}>
+            <List>
+              <List.Item style = {{fontSize: 20}}>
+                <List.Header>{this.state.activeItem.invoiceID}</List.Header>
+              </List.Item>
+              <List.Item>
+                <List.Icon name='euro' />
+                <List.Content>Amount: {this.state.activeItem.amount}€</List.Content>
+              </List.Item>
+              <List.Item>
+                <List.Icon name='calendar alternate outline' />
+                <List.Content>
+                  Emission date: {this.state.activeItem.emissionDate}
+                </List.Content>
+              </List.Item>
+              <List.Item>
+                <List.Icon name='calendar times outline' />
+                <List.Content>
+                  Expiration date: {this.state.activeItem.expirationDate}
+                </List.Content>
+              </List.Item>
+              <List.Item>
+                <List.Icon name='id card outline' />
+                <List.Content>
+                  NIF: {this.state.activeItem.NIF}
+                </List.Content>
+              </List.Item>
+            </List>
+          </Segment>
+        </div>
+      </div>
+
+  )
 
   render() {
     var listItems = null
@@ -388,42 +436,7 @@ class InvoiceForm extends Component {
       )
     }
 
-    const InvoiceData = (
-      <div style={{textAlign:'center'}}>
-          <div style = {{textAlign: 'left', display: 'inline-block'}}>
-            <Segment color = 'black' padded style = {{maxHeight: 400, maxWidth: 250}}>
-              <List>
-                <List.Item style = {{fontSize: 20}}>
-                  <List.Header>{this.state.activeItem.invoiceID}</List.Header>
-                </List.Item>
-                <List.Item>
-                  <List.Icon name='euro' />
-                  <List.Content>Amount: {this.state.activeItem.amount}</List.Content>
-                </List.Item>
-                <List.Item>
-                  <List.Icon name='calendar alternate outline' />
-                  <List.Content>
-                    Emission date: {this.state.activeItem.emissionDate}
-                  </List.Content>
-                </List.Item>
-                <List.Item>
-                  <List.Icon name='calendar times outline' />
-                  <List.Content>
-                    Expiration date: {this.state.activeItem.expirationDate}
-                  </List.Content>
-                </List.Item>
-                <List.Item>
-                  <List.Icon name='id card outline' />
-                  <List.Content>
-                    NIF: {this.state.activeItem.NIF}
-                  </List.Content>
-                </List.Item>
-              </List>
-            </Segment>
-          </div>
-        </div>
-
-    )
+    
 
     return(
       <div style = {{
@@ -439,8 +452,9 @@ class InvoiceForm extends Component {
         <List items = {listItems} />
         {this.showModal()}
         <div style = {{textAlign: ''}}>
-              {this.state.invoiceSended ? <SuccessfullySendedInvoiceMsg nif = {this.state.nif} amount = {this.state.amount} invoiceNumber = {this.state.invoiceNumber} invoiceSended = {this.state.invoiceSended}></SuccessfullySendedInvoiceMsg> : null}
-            </div>
+          {this.state.isResolved ? this.showSuccessfullySendedMessage() : null}
+          
+        </div>
       </div>
     )
   }
