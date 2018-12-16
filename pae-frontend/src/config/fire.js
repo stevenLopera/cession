@@ -1,6 +1,7 @@
 
 import firebase from 'firebase'
-
+import 'firebase/firestore';
+import 'firebase/auth';
 var config = {
     apiKey: "AIzaSyAurYk2yDza7rvZ57VKFm6GGNoWgq39Q4w",
     authDomain: "cessions-e83a9.firebaseapp.com",
@@ -10,5 +11,8 @@ var config = {
     messagingSenderId: "259478921601"
   };
 
-  const fire = firebase.initializeApp(config);
-  export default fire
+export const fire = firebase.initializeApp(config);
+
+export const database = firebase.database();
+
+firebase.firestore().settings({ timestampsInSnapshots: true });

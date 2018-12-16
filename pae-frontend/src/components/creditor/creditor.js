@@ -1,5 +1,7 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types'
+import {fire, database} from '../../config/fire';
+import { browserHistory } from "react-router";
 import {
   Button,
   Container,
@@ -15,8 +17,11 @@ import {
   GridRow,
   Form,
   Message,
-  Header
+  Header,
+  Dimmer,
+  Loader
 } from 'semantic-ui-react'  
+import { getInvoicesList} from '../../managers/firebaseManager';
 
 class Creditor extends Component {
   render() {
@@ -76,6 +81,10 @@ class SideMenuVertical extends Component {
       this.props.changeMenuOption();
     }
   }
+  logout() {
+    fire.auth().signOut();
+    browserHistory.push("/login");
+  }   
 
   render() {
     const { activeItem } = this.state
@@ -93,6 +102,7 @@ class SideMenuVertical extends Component {
           active={activeItem === 'payments'}
           onClick={this.handleItemClick}
         />
+        <Button color = 'red' onClick = {this.logout}> Logout </Button> 
       </Menu>
     )
   }
@@ -110,14 +120,16 @@ class RequestsComponent extends Component {
     this.validateRequest = this.validateRequest.bind(this);
     this.rejectRequest = this.rejectRequest.bind(this);
     this.state = {
-      selectedRequest: '',
+      selectedRequest: {},
       showModal: false,
       showValidationMessage: false,
       isRequestValidated: false,
       hasRequests: false,
-      requests: []
+      isLoading: true,
+      requests: [],
+      hasSelectedRequest: false
     } 
-    // this.getRequests().bind(this)
+    this.getRequests = this.getRequests.bind(this)
   }
 
   componentDidMount() {
@@ -125,51 +137,89 @@ class RequestsComponent extends Component {
   }
 
   getRequests() {
-    // TODO: get requests from SM???
-    this.setState({
-      hasRequests: true, 
-      requests: [
-        {
-          assigneeName: 'Pepe',
-          invoiceHash: '27381273194',
-        },
-        {
-          assigneeName: 'Jerry',
-          invoiceHash: 'sg172g8471g72dg871238s126sf'
-        }
-      ]
+    getInvoicesList('creditor').then((res) => {
+      this.setState({
+        requests: res,
+        isLoading: false,
+        hasRequests: res.length > 0
+      })
+      console.log('promise returned');
     })
   }
 
   handleItemClick = (event) => {
     // Only way found to detect the element clicked
-    const activeItem = event.target.parentNode.parentNode.id
+    const activeItemName = event.target.parentNode.parentNode.id
     
+    const activeItem = this.state.requests.find((item) => (item.data.invoiceID === activeItemName))
+   
     this.setState({
       selectedRequest: activeItem,
-      showModal: true
+      showModal: true,
+      hasSelectedRequest: true
     })
   }
 
-  showModal() {
-    const activeItem = this.state.requests.find((item) => item.assigneeName === this.state.selectedRequest)
+  getInvoiceDetailsView = () => (
+    
+    <div style={{textAlign:'center'}}>
+        <div style = {{textAlign: 'left', display: 'inline-block'}}>
+          <Segment color = 'black' padded style = {{maxHeight: 400, maxWidth: 250}}>
+            <List>
+              <List.Item style = {{fontSize: 20}}>
+                <List.Header>{this.state.selectedRequest.data.invoiceID}</List.Header>
+              </List.Item>
+              <List.Item>
+                <List.Icon name='euro' />
+                <List.Content>Amount: {this.state.selectedRequest.data.amount}€</List.Content>
+              </List.Item>
+              <List.Item>
+                <List.Icon name='calendar alternate outline' />
+                <List.Content>
+                  Emission date: {this.state.selectedRequest.data.emissionDate}
+                </List.Content>
+              </List.Item>
+              <List.Item>
+                <List.Icon name='calendar times outline' />
+                <List.Content>
+                  Expiration date: {this.state.selectedRequest.data.expirationDate}
+                </List.Content>
+              </List.Item>
+              <List.Item>
+                <List.Icon name='id card outline' />
+                <List.Content>
+                  NIF: {this.state.selectedRequest.data.NIF}
+                </List.Content>
+              </List.Item>
+            </List>
+          </Segment>
+        </div>
+      </div>
 
-    if(activeItem) {
+  )
+
+  showModal() {
+    console.log(this.state.selectedRequest);
+
+    if(this.state.selectedRequest) {      
       return (
         <Modal
           open = {this.state.showModal}
           onClose = {() => this.setState({showModal: false})}
         >
-          <Modal.Header>{activeItem.assigneeName}</Modal.Header>
+          <Modal.Header>Invoice details</Modal.Header>
           <Modal.Content>
-            <Button color = 'green' onClick = {() => this.validateRequest(activeItem)}>
-              <Icon name = 'react'></Icon>
-                Validate invoice
-            </Button>
-            <Button color = 'red' onClick = {() => this.rejectRequest(activeItem)}>
-              <Icon name = 'close'></Icon>
-                Reject
-            </Button>
+            {this.state.hasSelectedRequest ? this.getInvoiceDetailsView(): null}
+            <div style = {{marginTop: 30}}>
+              <Button color = 'green' onClick = {this.validateRequest}>
+                <Icon name = 'check'></Icon>
+                  Validate invoice
+              </Button>
+              <Button color = 'red' onClick = {this.rejectRequest}>
+                <Icon name = 'cancel'></Icon>
+                  Reject
+              </Button>
+              </div>
           </Modal.Content>
         </Modal>
       )
@@ -215,18 +265,24 @@ class RequestsComponent extends Component {
 
   render() {
 
+    var listItems = null
 
-      const listItems = this.state.requests.map((result) => 
-        <List.Item key= {result.assigneeName}>
-          <div id={result.assigneeName} onClick = {this.handleItemClick}>
+    if (this.state.requests) {
+      const list = this.state.requests
+      console.log(this.state.requests);
+      
+      listItems = list.map((result) => 
+        <List.Item key= {result.data.invoiceID}>
+          <div id={result.data.invoiceID} onClick = {this.handleItemClick}>
             <Card
               as = 'a'
-              header={result.assigneeName}
-              id = {result.assigneeName}
+              header={result.data.invoiceID}
+              id = {result.data.invoiceID}
             />  
           </div>
         </List.Item>
       )
+    }
 
       const EmptyRequests = () => (
         <Segment placeholder style={{minHeight: 600}}>
@@ -244,13 +300,19 @@ class RequestsComponent extends Component {
       return(
         
         <div>
+          {this.state.isLoading ? 
+          <Dimmer active>
+            <Loader></Loader>
+          </Dimmer>
+        :
+        null}
           {this.state.hasRequests ? 
           <div style = {{
             display: 'inline-block',
             textAlign: "left"
           }}>
             <List items = {listItems} />
-            {this.showModal()}
+            {this.state.selectedRequest !== {} ? this.showModal() : null}
             <div style = {{textAlign: ''}}>
               {this.state.showValidationMessage ? <ValidateRequestComponent isValidate = {this.state.isRequestValidated}></ValidateRequestComponent> : null}
             </div>

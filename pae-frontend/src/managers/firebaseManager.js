@@ -1,5 +1,6 @@
 
-import  firebase  from '../config/fire';
+
+import  {fire}  from '../config/fire';
 import { auth } from 'firebase';
 
 
@@ -67,7 +68,7 @@ export function uploadInvoice(data) {
 // Returns fixed @ACME smart contract 
 export function getAcmeSCAddress(){
     
-    var firebaseRef = firebase.database().ref();
+    var firebaseRef = fire.database().ref();
     return firebaseRef.once("value")
         .then(function(snapshot) {
 
@@ -79,10 +80,21 @@ export function getAcmeSCAddress(){
     });
 }
 
+// Generar Public Key pb_k for the bank and set
+//let R = new TextDecoder("utf-8").decode(nacl.randomBytes(32));
+// Returns fixed Bank Public Key 
+function getBankPublicKey(){
+    var firebaseRef = fire.database().ref();
+    firebaseRef.once("value")
+        .then(function(snapshot) {
+                
+        return snapshot.child("constants/publicKey");
+    });
+}
 
 //Funcion para buscar facturas por NºFactura
 export function getInvoiceByID(id){
-    var firebaseRef = firebase.database().ref();
+    var firebaseRef = fire.database().ref();
     firebaseRef.once("value")
         .then(function(snapshot) {
         snapshot.child(`unsignedInvoices/${id}`).val()
@@ -104,17 +116,17 @@ export function createInvoice(invoice){
 
     let invoiceID = invoice.invoiceNumber
     
-    var firebaseRef = firebase.database().ref();
+    var firebaseRef = fire.database().ref();
     var updateThis =
     {
-        assigneeID: firebase.auth().currentUser.uid,
+        assigneeID: fire.auth().currentUser.uid,
         // Data es el conjunto que se le envia al Gobierno
         data: {
             RKey: "String",
             NIF: invoice.nif,
             amount: invoice.amount,
             invoiceID: invoiceID,
-            emisionDate: invoice.emissionDate,
+            emissionDate: invoice.emissionDate,
             expirationDate: invoice.expirationDate
         },
         toDebtorAccount: invoice.toDebtorAccount,
@@ -130,15 +142,10 @@ export function createInvoice(invoice){
 // Debtor/Bank gets invoices in function of "s"(true","false")
 export function getInvoicesList(typeList){
 
-    const isProcessed = false
-    
-
-    // typeList === 'debtor' ? isDebtor = true : 
-
     var toDebtorList = []
     var toCreditorList = []
 
-    var firebaseRef = firebase.database().ref();
+    var firebaseRef = fire.database().ref();
     return firebaseRef.once("value")
         .then(function(snapshot) {
         var comission = snapshot.child("constants/ACMEComission").val();
@@ -148,6 +155,7 @@ export function getInvoicesList(typeList){
         // console.log(invoiceList);
         
         var i = 0
+        var j = 0
         snapshot.child("unsignedInvoices/").forEach(function(data) {
             var debtorAuth = data.child("debtorAuth").val();
             if(debtorAuth == false){
@@ -162,11 +170,16 @@ export function getInvoicesList(typeList){
                 console.log(toDebtorList)
       
             } else {
-                toCreditorList[i] = data.child("data").val()
-                i++
+                toCreditorList[j] = {
+                    KKey: data.child("KKey").val(),
+                    SCAddress: data.child("SCAddress").val(),
+                    toCreditorAccount: data.child("toCreditorAccount").val(),
+                    data: (data.child("data").val())
+            }
+                j++
             }
 
-    
+
         });
         
         switch(typeList) {
@@ -179,6 +192,14 @@ export function getInvoicesList(typeList){
         }
     });
 }
+
+export function resolveInvoice(invoiceID){
+    // Get a reference to the database service
+    var firebaseRef = fire.database().ref();
+    return firebaseRef.child("unsignedInvoices").child(invoiceID).update({debtorAuth: true});
+}
+
+
 /*
 
 //IDEA: Borrar la JSON generada anteriormente cuando el banco publica 
@@ -234,6 +255,7 @@ function getInvoiceByInvoiceID(id, collection){
         
     });
 }
+
 
 // El assignee firma el dataset después de confirmar la info.
 function acceptInvoiceSigned(){
