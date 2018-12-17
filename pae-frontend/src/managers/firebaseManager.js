@@ -215,29 +215,40 @@ function deleteInvoiceByInvoiceID(id, collection){
 
 /*
 // Creates new invoice collection accepted by the debtor and signed by the bank.
-function signInvoiceAccepted(){
+function createInvoiceSigned(String bankComission, String bankAccount){
     
     var invoiceID = setterInvoice.value;
     
     var firebaseRef = firebase.database().ref();
-    var comission = firebaseRef.once("constants/ACMEComission").val();
+    var acmeComission = firebaseRef.once("constants/ACMEComission").val();
     var acmeAccount = firebaseRef.once("constants/ACMEAccount").val();
+    var kKey = firebaseRef.once("unsignedInvoices/" + invoiceID + "/kKey").val();
+    var NIF = firebaseRef.once("unsignedInvoices/" + invoiceID + "/data/NIF").val();
+    var amount = firebaseRef.once("unsignedInvoices/" + invoiceID + "/data/NIF").val();
+    var finalAmount = amount - acmeComission - bankComission;
+    var assigneeAccount = firebaseRef.once("unsignedInvoices/" + invoiceID + "/toCreditorAccount").val();
+
+    let data = {
+        nif : NIF,
+        invoiceID: invoiceID,
+        amount: finalAmount,
+        acmeAccount: acmeAccount,
+        acmeComission: acmeComission,
+        toCreditorAccount: assigneeAccount
+    }
+    var json = JSON.stringify(data)
+    // encripta
+    let encrip= aes.encryptText(data, kKey); // la k la recibio de ACME
+    // firma
+    let bankSign = nacl.sign(toUint8Array(""), clavesB.secretKey);
+    //  envia  encrip_firmadoB a Assignee y Acme  OFF blockchain
 
     var updateThis =
     {   
         InvoiceID: "String",
-        data : "String",
-        /*data:{
-            invoiceID: "String",  
-            NIF: "String",
-            amount: "Double",//Amount - comissions  
-            toCreditorAccount: "String"
-            comission: comission
-            ACMEaccount: acmeAccount
-            //Se tiene que cifraf con K toda la JSON
-        },        bankAccount: "String",
-        bankSign: "String"
-
+        data : encrip,
+        bankAccount: bankAccount,
+        bankSign: bankSign
     };
     firebaseRef.child("signedInvoices/" + invoiceID).update(updateThis);
 }
