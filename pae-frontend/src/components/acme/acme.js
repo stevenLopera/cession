@@ -21,7 +21,7 @@ import {
   Dimmer,
   Loader
 } from 'semantic-ui-react'  
-import { getAcmeInvoicesList, getSignedList, getInvoicesList} from '../../managers/firebaseManager';
+import { getAcmeInvoicesList, getFullSignedInvoicesList} from '../../managers/firebaseManager';
 
 class Acme extends Component {
   render() {
@@ -137,7 +137,7 @@ class AcceptedInvoicesComponent extends Component {
   }
 
   getRequests() {
-    getAcmeInvoicesList('acme').then((res) => {
+    getAcmeInvoicesList().then((res) => {
       this.setState({
         requests: res,
         isLoading: false,
@@ -162,7 +162,7 @@ class AcceptedInvoicesComponent extends Component {
   getInvoiceDetailsView = () => (
    <div style={{textAlign:'center'}}>
         <div style = {{textAlign: 'left', display: 'inline-block'}}>
-          <Segment color = 'black' padded style = {{maxHeight: 400, maxWidth: 250}}>
+          <Segment color = 'black' padded style = {{maxHeight: 400, minWidth: 250}}>
             <List>
               <List.Item style = {{fontSize: 20}}>
                 <List.Header>Invoice info</List.Header>
@@ -250,7 +250,7 @@ class AcceptedInvoicesComponent extends Component {
       
       listItems = list.map((result) => 
         
-        <List.Item key= {result.hash}>
+        <List.Item style = {{minWidth: 250}} key= {result.hash}>
         {console.log(result)}
           <div id={result.Hash} onClick = {this.handleItemClick}>
             <Card
@@ -369,8 +369,24 @@ class SendInvoiceComponent extends Component {
 
 }
 
-
-// Invoices
+//
+//
+//
+//
+//
+//
+//
+//
+//
+// Signed Invoices
+//
+//
+//
+//
+//
+//
+//
+//
 //
 //
 
@@ -399,7 +415,7 @@ class SignedInvoicesComponent extends Component {
     }
     
     getRequests() {
-        getInvoicesList('creditor').then((res) => {
+      getFullSignedInvoicesList().then((res) => {
         this.setState({
             requests: res,
             isLoading: false,
@@ -429,16 +445,16 @@ class SignedInvoicesComponent extends Component {
             <Segment color = 'black' padded style = {{maxHeight: 400, maxWidth: 250}}>
                 <List>
                 <List.Item style = {{fontSize: 20}}>
-                    <List.Header>{this.state.selectedRequest.data.invoiceID}</List.Header>
+                    <List.Header>{this.state.selectedRequest.invoiceID}</List.Header>
                 </List.Item>
                 <List.Item>
                     <List.Icon name='euro' />
-                    <List.Content>Amount: {this.state.selectedRequest.data.amount}€</List.Content>
+                    <List.Content>Amount: {this.state.selectedRequest.amount}€</List.Content>
                 </List.Item>
                 <List.Item>
                     <List.Icon name='calendar alternate outline' />
                     <List.Content>
-                    Emission date: {this.state.selectedRequest.data.emissionDate}
+                    Emission date: {this.state.selectedRequest.emissionDate}
                     </List.Content>
                 </List.Item>
                 <List.Item>
@@ -481,11 +497,7 @@ class SignedInvoicesComponent extends Component {
                 <div style = {{marginTop: 30}}>
                 <Button color = 'green' onClick = {this.validateRequest}>
                     <Icon name = 'check'></Icon>
-                    Validate invoice
-                </Button>
-                <Button color = 'red' onClick = {this.rejectRequest}>
-                    <Icon name = 'cancel'></Icon>
-                    Reject
+                    Send invoice
                 </Button>
                 </div>
             </Modal.Content>

@@ -37,7 +37,7 @@ export function uploadInvoice(data) {
 //         };
         
 //     // Get a reference to the database service
-//     var firebaseRef = firebase.database().ref();
+//     var firebaseRef = fire.database().ref();
 //     firebaseRef.child("Invoices/" + invoiceID).update(updateThis);
 //     //firebaseRef.child("Text").set(setText.value);
 //     //window.alert("Working...")
@@ -47,7 +47,7 @@ export function uploadInvoice(data) {
 
 //     // Get a reference to the database service
 //     var invoiceID = getterInvoice.value;
-//     var firebaseRef = firebase.database().ref();
+//     var firebaseRef = fire.database().ref();
 //     firebaseRef.once("value")
 //         .then(function(snapshot) {
         
@@ -84,7 +84,7 @@ export function getAcmeSCAddress(){
 //let R = new TextDecoder("utf-8").decode(nacl.randomBytes(32));
 // Returns fixed Bank Public Key 
 export function getBankPublicKey(){
-    var firebaseRef = firebase.database().ref();
+    var firebaseRef = fire.database().ref();
     return firebaseRef.once("value")
         .then(function(snapshot) {
                 
@@ -185,26 +185,7 @@ export function getInvoicesList(typeList){
     });
 }
 
-export function getSignedList(){
 
-    var List = []
-
-    var firebaseRef = fire.database().ref();
-    return firebaseRef.once("value").then(function(snapshot) {
-        var i = 0
-        snapshot.child("signedInvoices/").forEach(function(data) {
-            List[i] = {
-                KKey: data.child("KKey").val(),
-                SCAddress: data.child("SCAddress").val(),
-                toCreditorAccount: data.child("toCreditorAccount").val(),
-                data: (data.child("data").val())
-            }
-        });
-        
-        return List
-        
-    });
-}
 
 export function getAcmeInvoicesList(){
 
@@ -229,6 +210,32 @@ export function getAcmeInvoicesList(){
     });
     
 }
+
+export function getFullSignedInvoicesList(){
+
+    var list = []
+
+    var firebaseRef = fire.database().ref();
+    return firebaseRef.once("value")
+        .then(function(snapshot) {
+
+        var i = 0
+        snapshot.child("signedInvoices/").forEach(function(data) {
+            var assigneSign = data.child("assigneeSign").val();
+            if(assigneSign != null){
+                list[i] = {
+                invoiceID : data.child("invoiceID").val(),
+                data : data.child("data").val(),
+                bankSign : data.child("bankSign").val(),
+                assigneSign : data.child("assigneeSign").val()
+                }
+                i++
+            }
+        });
+        return list;
+    });
+}
+
 export function resolveInvoice(invoiceID){
     // Get a reference to the database service
     var firebaseRef = fire.database().ref();
@@ -236,13 +243,26 @@ export function resolveInvoice(invoiceID){
 }
 
 
+
+// Creates invoice using creditor form to send to BC 
+export function createAcceptedInvoice(invoice){
+
+    var firebaseRef = fire.database().ref();
+    var updateThis =
+    {
+        hash: invoice.hash,
+        bankPublicKey: invoice.bankPublicKey
+    };
+        return firebaseRef.child("acceptedInvoices/" + invoice.hash).update(updateThis).then((data) => {return data});
+}
+
 /*
 
 //IDEA: Borrar la JSON generada anteriormente cuando el banco publica 
 //su dataset privada.
 function deleteInvoiceByInvoiceID(id, collection){
     //collection = {signed, unsigned i accepted}
-    var firebaseRef = firebase.database().ref();
+    var firebaseRef = fire.database().ref();
     firebaseRef.child(collection + "Invoices/"+ id).remove();
 }
 
@@ -252,7 +272,7 @@ function signInvoiceAccepted(){
     
     var invoiceID = setterInvoice.value;
     
-    var firebaseRef = firebase.database().ref();
+    var firebaseRef = fire.database().ref();
     var comission = firebaseRef.once("constants/ACMEComission").val();
     var acmeAccount = firebaseRef.once("constants/ACMEAccount").val();
 
@@ -278,7 +298,7 @@ function signInvoiceAccepted(){
 //Funcion para buscar facturas por NºFactura
 function getInvoiceByInvoiceID(id, collection){
     //collection se le puede pasar signed o unsigned para decidir de donde descarga
-    var firebaseRef = firebase.database().ref();
+    var firebaseRef = fire.database().ref();
     firebaseRef.once("value")
         .then(function(snapshot) {
         snapshot.child(collection + "Invoices/").forEach(function(data) {
@@ -298,7 +318,7 @@ function getInvoiceByInvoiceID(id, collection){
 function acceptInvoiceSigned(){
     
     var invoiceID = setterInvoice.value;   
-    var firebaseRef = firebase.database().ref();
+    var firebaseRef = fire.database().ref();
     var updateThis =
     {     
         assigneeSign: "String"
@@ -308,7 +328,7 @@ function acceptInvoiceSigned(){
 
 
 function getInvoiceByUserID(id, collection){
-    var firebaseRef = firebase.database().ref();
+    var firebaseRef = fire.database().ref();
     firebaseRef.once("value")
         .then(function(snapshot) {
         snapshot.child(collection + "Invoices/").forEach(function(data) {
@@ -324,29 +344,3 @@ function getInvoiceByUserID(id, collection){
 }
 */
 
-// ACME gets invoices in function of full signed invoices
-export function getFullSignedInvoicesList(){
-
-    var list = []
-
-    var firebaseRef = firebase.database().ref();
-    return firebaseRef.once("value")
-        .then(function(snapshot) {
-
-        var i = 0
-        snapshot.child("signedInvoices/").forEach(function(data) {
-            var assigneSign = data.child("assigneeSign").val();
-            if(assigneSign != null){
-                list[i] = {
-                invoiceID = data.child("invoiceID").val(),
-                data = data.child("data").val(),
-                bankSign = data.child("bankSign").val(),
-                assigneSign = data.child("assigneeSign").val()
-                }
-                i++
-                console.log(toDebtorList)
-            }
-        });
-        return list;
-    });
-}
