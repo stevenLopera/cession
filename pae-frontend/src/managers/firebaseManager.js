@@ -83,12 +83,12 @@ export function getAcmeSCAddress(){
 // Generar Public Key pb_k for the bank and set
 //let R = new TextDecoder("utf-8").decode(nacl.randomBytes(32));
 // Returns fixed Bank Public Key 
-function getBankPublicKey(){
-    var firebaseRef = fire.database().ref();
-    firebaseRef.once("value")
+export function getBankPublicKey(){
+    var firebaseRef = firebase.database().ref();
+    return firebaseRef.once("value")
         .then(function(snapshot) {
                 
-        return snapshot.child("constants/publicKey");
+        return snapshot.child("constants/bankPublicKey").val();
     });
 }
 
@@ -122,7 +122,7 @@ export function createInvoice(invoice){
         assigneeID: fire.auth().currentUser.uid,
         // Data es el conjunto que se le envia al Gobierno
         data: {
-            RKey: "String",
+            RKey: invoice.RKey,
             NIF: invoice.nif,
             amount: invoice.amount,
             invoiceID: invoiceID,
@@ -132,7 +132,7 @@ export function createInvoice(invoice){
         toDebtorAccount: invoice.toDebtorAccount,
         toCreditorAccount: invoice.toCreditorAccount,
         SCAddress: invoice.acmeSCAddress,
-        KKey: "String",
+        KKey: invoice.KKey,
         debtorAuth: false
     };
     return firebaseRef.child("unsignedInvoices/" + invoiceID).update(updateThis).then((data) => {return data});
@@ -158,16 +158,9 @@ export function getInvoicesList(typeList){
         snapshot.child("unsignedInvoices/").forEach(function(data) {
             var debtorAuth = data.child("debtorAuth").val();
             if(debtorAuth == false){
-                //Falta por definir qué develvemos para montar la vista.
-                //Seguramente todo el data
-                 
-                    //case debtor, enviar el hash del dataset a la BC sin guardarlo en FB
-
-                var json = JSON.stringify(data.child("data").val())
                 toDebtorList[i] = data.child("data").val()
                 i++
                 console.log(toDebtorList)
-      
             } else {
                 toCreditorList[j] = {
                     KKey: data.child("KKey").val(),
@@ -248,13 +241,14 @@ export function resolveInvoice(invoiceID){
 //IDEA: Borrar la JSON generada anteriormente cuando el banco publica 
 //su dataset privada.
 function deleteInvoiceByInvoiceID(id, collection){
-    //collection se le puede pasar signed o unsigned para decidir de donde descarga
+    //collection = {signed, unsigned i accepted}
     var firebaseRef = firebase.database().ref();
     firebaseRef.child(collection + "Invoices/"+ id).remove();
 }
 
-// Creates new invoice collection accepted by the debtor and bank.
-function acceptInvoiceSigned(){
+/*
+// Creates new invoice collection accepted by the debtor and signed by the bank.
+function signInvoiceAccepted(){
     
     var invoiceID = setterInvoice.value;
     
@@ -307,7 +301,7 @@ function acceptInvoiceSigned(){
     var firebaseRef = firebase.database().ref();
     var updateThis =
     {     
-        assigneSign: "String"
+        assigneeSign: "String"
     };
     firebaseRef.child("signedInvoices/" + invoiceID).update(updateThis);
 }
@@ -329,3 +323,30 @@ function getInvoiceByUserID(id, collection){
     });
 }
 */
+
+// ACME gets invoices in function of full signed invoices
+export function getFullSignedInvoicesList(){
+
+    var list = []
+
+    var firebaseRef = firebase.database().ref();
+    return firebaseRef.once("value")
+        .then(function(snapshot) {
+
+        var i = 0
+        snapshot.child("signedInvoices/").forEach(function(data) {
+            var assigneSign = data.child("assigneeSign").val();
+            if(assigneSign != null){
+                list[i] = {
+                invoiceID = data.child("invoiceID").val(),
+                data = data.child("data").val(),
+                bankSign = data.child("bankSign").val(),
+                assigneSign = data.child("assigneeSign").val()
+                }
+                i++
+                console.log(toDebtorList)
+            }
+        });
+        return list;
+    });
+}
