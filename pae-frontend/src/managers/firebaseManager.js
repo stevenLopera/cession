@@ -94,17 +94,10 @@ export function getBankPublicKey(){
 //Funcion para buscar facturas por NºFactura
 export function getInvoiceByID(id){
     var firebaseRef = firebase.database().ref();
-    firebaseRef.once("value")
+    return firebaseRef.once("value")
         .then(function(snapshot) {
-        snapshot.child(`unsignedInvoices/${id}`).val()
-        snapshot.child("unsignedInvoices/").forEach(function(data) {
-            var invoiceID = data.child("data/invoiceID").val();
-            if(invoiceID == id){                
-                //var json = JSON.stringify(data.child("data").val())
-                //console.log(json)
-                console.log(data.val())
-            }
-        });
+        return(snapshot.child(`unsignedInvoices/${id}`).val())
+       
         
     });
 }
@@ -211,6 +204,13 @@ export function deleteInvoiceByInvoiceID(id, collection){
     //collection se le puede pasar signed o unsigned para decidir de donde descarga
     var firebaseRef = firebase.database().ref();
     firebaseRef.child(collection + "Invoices/"+ id).remove();
+}
+
+export function getAcceptedInvoice(invoiceHash) {
+    var firebaseRef = firebase.database().ref();
+    return firebaseRef.once('value').then(function(snapshot) {
+        return snapshot.child('acceptedInvoices/' + invoiceHash).val();
+    })
 }
 
 /*

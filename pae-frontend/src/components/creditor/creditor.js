@@ -19,8 +19,9 @@ import {
   Dimmer,
   Loader
 } from 'semantic-ui-react'  
-import { getInvoicesList, getBankPublicKey, createAcceptedInvoice, getFullSignedInvoicesList, deleteInvoiceByInvoiceID } from '../../managers/firebaseManager';
+import { getInvoicesList, getBankPublicKey, createAcceptedInvoice, getInvoiceByID, deleteInvoiceByInvoiceID } from '../../managers/firebaseManager';
 import { generateInvoiceHash, generateIdAndNifHash } from '../../utils/crypto_hash_sign';
+import { isNullOrUndefined } from 'util';
 
 class Creditor extends Component {
   render() {
@@ -102,26 +103,35 @@ class SideMenuVertical extends Component {
     const { activeItem } = this.state
 
     return (
-      <Menu pointing secondary vertical inverted>
-        <Menu.Item
-          name='requests'
-          active={  activeItem === 'requests'}
-          onClick={this.handleItemClick}
-        />
-        
-        <Menu.Item
-          name='Signatures'
-          id = 'signments'
-          active={activeItem === 'signments'}
-          onClick={this.handleItemClick}
-        />
-        <Menu.Item
-          name='payments'
-          id = 'payments'
-          active={activeItem === 'payments'}
-          onClick={this.handleItemClick}
-        />
-      </Menu>
+      <div>
+        <Header as='h2' style = {{marginTop: 25}} inverted>
+          <Icon name='user circle' />
+          <Header.Content>
+            Creditor
+          </Header.Content>
+        </Header>
+        <Menu pointing secondary vertical inverted>
+          <Menu.Item
+            name='requests'
+            id = 'requests'
+            active={  activeItem === 'requests'}
+            onClick={this.handleItemClick}
+          />
+          
+          <Menu.Item
+            name='Signatures'
+            id = 'signments'
+            active={activeItem === 'signments'}
+            onClick={this.handleItemClick}
+          />
+          <Menu.Item
+            name='payments'
+            id = 'payments'
+            active={activeItem === 'payments'}
+            onClick={this.handleItemClick}
+          />
+        </Menu>
+      </div>
     )
   }
 }
@@ -331,6 +341,8 @@ class RequestsComponent extends Component {
     }
 
       const EmptyRequests = () => (
+        this.state.isLoading ?
+        null :
         <Segment placeholder style={{minHeight: 600}}>
               <Header icon>
                 <Icon name='file outline' />
@@ -340,7 +352,8 @@ class RequestsComponent extends Component {
                 <Icon name = 'redo'></Icon>
                 Reload
               </Button>
-          </Segment>
+          </Segment> 
+          
       )
 
       const MessageAcceptedRequest = () => (
@@ -365,17 +378,26 @@ class RequestsComponent extends Component {
       return(
         
         <div>
+           
           {this.state.isLoading ? 
           <Dimmer active>
             <Loader></Loader>
           </Dimmer>
         :
         null}
-          {this.state.hasRequests ? 
+          {this.state.hasRequests  ? 
           <div style = {{
             display: 'inline-block',
-            textAlign: "left"
+            textAlign: "left",
+            marginTop: 10
           }}>
+            <Header as='h2' style = {{marginTop: 25}}>
+              <Icon name='file outline' />
+              <Header.Content>
+                Invoice requests
+                <Header.Subheader>Start with the process</Header.Subheader>
+              </Header.Content>
+            </Header>
             <List items = {listItems} />
             {this.state.selectedRequest !== {} ? this.showModal() : null}
             <div style = {{textAlign: ''}}>
@@ -549,14 +571,31 @@ class PaymentsComponent extends Component {
   }
 
   handleSubmit() {
+    this.setState({
+      isLoading: true // hardcoded
+    })
     
     if (this.state.invoiceID && this.state.nif.length > 0) {
       console.log(this.state);
-      
-      this.setState({
-        isLoading: true,
-        showInvoiceToPay: true, // hardcoded
+      getInvoiceByID(this.state.invoiceID).then((invoice) => {
+        console.log(invoice);
+        
+        if (!isNullOrUndefined(invoice)) {
+          this.setState({
+            selectedRequest: invoice,
+            showInvoiceToPay: true,
+            isLoading: false,
+            showEmptySearch: false
+          })
+        } else {
+          this.setState({
+            showInvoiceToPay: false,
+            isLoading: false,
+            showEmptySearch: true
+          })
+        }
       })
+      
       const hash = generateIdAndNifHash(this.state.nif, this.state.invoiceID)
       // containsPublicKeyBank(hash).then((isAccepted) => {
       //     if(isAccepted) {
@@ -568,6 +607,9 @@ class PaymentsComponent extends Component {
       //     }) 
       // })
     } else {
+      this.setState({
+        isLoading:false
+      })
       alert('Please fill the form correctly')
     }
   }
@@ -605,6 +647,10 @@ class PaymentsComponent extends Component {
 
   paySelectedInvoice() {
     // todo set isPayed attribute to true firebase
+    alert('Payed.')
+    this.setState({
+      showInvoiceToPay: false
+    })
   }
 
   showModal() {
@@ -649,10 +695,10 @@ class PaymentsComponent extends Component {
     )
 
     const EmptyPayments = () => (<div>
-      <Segment placeholder style={{minHeight: 600}}>
+      <Segment placeholder>
         <Header icon>
           <Icon name='ethereum' />
-          There are not any payments to be done at the moment. Try refreshing the page or come back later.
+          We couldn't find any invoice to pay with this data. Try refreshing the page or come back later.
         </Header>
         <Button onClick = {() => window.location.reload()}>
           <Icon name = 'redo'></Icon>
@@ -693,13 +739,13 @@ class PaymentsComponent extends Component {
               </List.Item>
             </List>
             <div style={{textAlign : 'right'}}>
-              <Button color = 'green' onClick = {this.paySelectedInvoice}>
-                <Icon name = 'payment'></Icon>
-                  Pay
-              </Button>
-              <Button color = 'red' onClick = {this.paySelectedInvoice}>
+              <Button color = 'red'>
                 <Icon name = 'cancel'></Icon>
                   Cancel
+              </Button>
+              <Button color = 'green' onClick = {this.paySelectedInvoice.bind(this)}>
+                <Icon name = 'payment'></Icon>
+                  Pay
               </Button>
             </div>
           </Segment>
@@ -710,6 +756,13 @@ class PaymentsComponent extends Component {
 
     return(
       <div>
+        <Header as='h2' style = {{marginTop: 25}}>
+          <Icon name='payment' />
+          <Header.Content>
+            Introduce client data
+            <Header.Subheader>Proceed with the invoice payment</Header.Subheader>
+          </Header.Content>
+        </Header>
         <Grid>
           <GridColumn width = {6}>
             <Form>
@@ -723,13 +776,22 @@ class PaymentsComponent extends Component {
             </Form>
           </GridColumn>
           <GridColumn width = {6}>
+            {this.state.isLoading ? 
+              <Dimmer active>
+                <Loader></Loader>
+              </Dimmer>
+            :
+            null}
             {this.state.showInvoiceToPay ? <InvoiceToPay/> : null}
+            {this.state.showEmptySearch ? <EmptyPayments/>: null}
           </GridColumn>
         </Grid>
       </div>
     )
   }
 }
+
+// SIGNATURES
 
 class SignmentsComponent extends Component {
   state = {
