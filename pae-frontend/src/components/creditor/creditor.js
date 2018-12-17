@@ -102,7 +102,7 @@ class SideMenuVertical extends Component {
           active={activeItem === 'payments'}
           onClick={this.handleItemClick}
         />
-        <Button color = 'red' onClick = {this.logout}> Logout </Button> 
+        <Button  color = 'red' onClick = {this.logout}> Logout </Button> 
       </Menu>
     )
   }

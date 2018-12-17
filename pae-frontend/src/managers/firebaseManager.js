@@ -146,8 +146,7 @@ export function getInvoicesList(typeList){
     var toCreditorList = []
 
     var firebaseRef = fire.database().ref();
-    return firebaseRef.once("value")
-        .then(function(snapshot) {
+    return firebaseRef.once("value").then(function(snapshot) {
         var comission = snapshot.child("constants/ACMEComission").val();
             console.log(comission);
 
@@ -193,6 +192,50 @@ export function getInvoicesList(typeList){
     });
 }
 
+export function getSignedList(){
+
+    var List = []
+
+    var firebaseRef = fire.database().ref();
+    return firebaseRef.once("value").then(function(snapshot) {
+        var i = 0
+        snapshot.child("signedInvoices/").forEach(function(data) {
+            List[i] = {
+                KKey: data.child("KKey").val(),
+                SCAddress: data.child("SCAddress").val(),
+                toCreditorAccount: data.child("toCreditorAccount").val(),
+                data: (data.child("data").val())
+            }
+        });
+        
+        return List
+        
+    });
+}
+
+export function getAcmeInvoicesList(){
+
+    var toAcmeList = []
+
+    var firebaseRef = fire.database().ref();
+    return firebaseRef.once("value").then(function(snapshot) {
+       
+        var i = 0
+        snapshot.child("acceptedInvoices/").forEach(function(data) {
+            toAcmeList[i] = {
+                Hash : data.child("hash").val(),
+                BankPublicKey : data.child("bankPublicKey").val()
+            }
+            i++
+            console.log(toAcmeList)
+    
+           
+
+        });
+        return toAcmeList;
+    });
+    
+}
 export function resolveInvoice(invoiceID){
     // Get a reference to the database service
     var firebaseRef = fire.database().ref();

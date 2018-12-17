@@ -8,7 +8,7 @@ import Login from './components/login/login';
 //import Home from './home';
 import Register from './components/register/register';
 import {Router, Route, browserHistory, IndexRoute} from "react-router";
-
+import Acme from './components/acme/acme';
 
 class App extends Component {
   constructor() {
@@ -38,14 +38,14 @@ authListener() {
   render() {
     return (
       <Router history = {browserHistory}>
-                <Route path = {"/"}> {this.state.user ? (<Assignee />) :(<Login />)}
+                <Route path = {"/"}> {this.state.user ? (<Assignee />) :(<Acme />)/*(<Login />)*/}
                     <IndexRoute component={Login} />
                     <Route path = {"login"} component = {Login} />
                     <Route path = {"register"} component = {Register}/>
                     <Route path = {"assignee"} component = {Assignee}/>
                     <Route path = {"creditor"} component = {Creditor}/>
                     <Route path = {"debtor"} component = {Debtor}/>
-                
+                    <Route path = {"acme"} component = {Acme}/>
                 </Route>
       </Router>
       
