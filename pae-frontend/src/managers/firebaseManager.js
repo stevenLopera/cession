@@ -201,13 +201,13 @@ export function createAcceptedInvoice(invoice){
         bankPublicKey: invoice.bankPublicKey
     };
         return firebaseRef.child("acceptedInvoices/" + invoice.hash).update(updateThis).then((data) => {return data});
-    }
+}
 
 
 
 //IDEA: Borrar la JSON generada anteriormente cuando el banco publica 
 //su dataset privada.
-function deleteInvoiceByInvoiceID(id, collection){
+export function deleteInvoiceByInvoiceID(id, collection){
     //collection se le puede pasar signed o unsigned para decidir de donde descarga
     var firebaseRef = firebase.database().ref();
     firebaseRef.child(collection + "Invoices/"+ id).remove();
