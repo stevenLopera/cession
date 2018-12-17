@@ -19,7 +19,7 @@ import {
   Dimmer,
   Loader
 } from 'semantic-ui-react'  
-import { getInvoicesList, getBankPublicKey, createAcceptedInvoice, getAcceptedInvoice, deleteInvoiceByInvoiceID } from '../../managers/firebaseManager';
+import { getInvoicesList, getBankPublicKey, createAcceptedInvoice, getFullSignedInvoicesList, deleteInvoiceByInvoiceID } from '../../managers/firebaseManager';
 import { generateInvoiceHash, generateIdAndNifHash } from '../../utils/crypto_hash_sign';
 
 class Creditor extends Component {
@@ -536,16 +536,48 @@ class PaymentsComponent extends Component {
 
   state = {
     hasPayments: false,
-    payments: []
+    payments: [],
+    isLoading: false
   }
 
   componentDidMount() {
     this.getPayments()
   }
 
+  handleChange(event) {
+    this.setState({[event.target.name]: event.target.value})
+  }
+
+  handleSubmit() {
+    
+    if (this.state.invoiceID && this.state.nif.length > 0) {
+      console.log(this.state);
+      
+      this.setState({
+        isLoading: true,
+        showInvoiceToPay: true, // hardcoded
+      })
+      const hash = generateIdAndNifHash(this.state.nif, this.state.invoiceID)
+      // containsPublicKeyBank(hash).then((isAccepted) => {
+      //     if(isAccepted) {
+      //       deleteInvoiceByInvoiceID(hash, 'accepted').catch((error) => console.error(error))
+      //     }
+      //     this.setState({
+      //        invoiceNotApprovedYet: isAccepted,
+      //        showApprovedMessage: true      
+      //     }) 
+      // })
+    } else {
+      alert('Please fill the form correctly')
+    }
+  }
+
+
   getPayments() {
     // TODO: get payments from SM???
-    
+    // getFullSignedInvoicesList().then(() => {
+
+    // })
     this.setState({
       hasPayments: true, 
       payments: [
@@ -629,10 +661,71 @@ class PaymentsComponent extends Component {
       </Segment>
     </div>)
 
+    const InvoiceToPay = () => (
+      <div style={{textAlign:'center'}}>
+        <div style = {{textAlign: 'left', display: 'inline-block'}}>
+          <Segment color = 'black' padded style = {{maxHeight: 400, maxWidth: 250}}>
+            <List>
+              <List.Item style = {{fontSize: 20}}>
+                <List.Header>{this.state.selectedRequest.data.invoiceID}</List.Header>
+              </List.Item>
+              <List.Item>
+                <List.Icon name='euro' />
+                <List.Content>Amount: {this.state.selectedRequest.data.amount}€</List.Content>
+              </List.Item>
+              <List.Item>
+                <List.Icon name='calendar alternate outline' />
+                <List.Content>
+                  Emission date: {this.state.selectedRequest.data.emissionDate}
+                </List.Content>
+              </List.Item>
+              <List.Item>
+                <List.Icon name='calendar times outline' />
+                <List.Content>
+                  Expiration date: {this.state.selectedRequest.data.expirationDate}
+                </List.Content>
+              </List.Item>
+              <List.Item>
+                <List.Icon name='id card outline' />
+                <List.Content>
+                  NIF: {this.state.selectedRequest.data.NIF}
+                </List.Content>
+              </List.Item>
+            </List>
+            <div style={{textAlign : 'right'}}>
+              <Button color = 'green' onClick = {this.paySelectedInvoice}>
+                <Icon name = 'payment'></Icon>
+                  Pay
+              </Button>
+              <Button color = 'red' onClick = {this.paySelectedInvoice}>
+                <Icon name = 'cancel'></Icon>
+                  Cancel
+              </Button>
+            </div>
+          </Segment>
+        </div>
+      </div>
+    )
+
 
     return(
       <div>
-        {this.state.hasPayments ? <PaymentsList /> : <EmptyPayments/>}
+        <Grid>
+          <GridColumn width = {6}>
+            <Form>
+              <Form.Input type='text' name = 'nif' value = {this.state.nif} label='NIF' placeholder='1726341Q' onChange = {this.handleChange.bind(this)}/>
+              <Form.Input type='number' name = 'invoiceID' value = {this.state.invoiceID} label='Invoice number'
+                          placeholder='80085' onChange = {this.handleChange.bind(this)}/>          
+              <Button type='submit' className = 'primary' onClick = {this.handleSubmit.bind(this)}>
+                  <Icon name = 'search' />
+                  Search
+              </Button>
+            </Form>
+          </GridColumn>
+          <GridColumn width = {6}>
+            {this.state.showInvoiceToPay ? <InvoiceToPay/> : null}
+          </GridColumn>
+        </Grid>
       </div>
     )
   }
