@@ -208,14 +208,14 @@ export function createAcceptedInvoice(invoice){
 //IDEA: Borrar la JSON generada anteriormente cuando el banco publica 
 //su dataset privada.
 function deleteInvoiceByInvoiceID(id, collection){
-    //collection se le puede pasar signed o unsigned para decidir de donde descarga
+    //collection = {signed, unsigned i accepted}
     var firebaseRef = firebase.database().ref();
     firebaseRef.child(collection + "Invoices/"+ id).remove();
 }
 
 /*
-// Creates new invoice collection accepted by the debtor and bank.
-function acceptInvoiceSigned(){
+// Creates new invoice collection accepted by the debtor and signed by the bank.
+function signInvoiceAccepted(){
     
     var invoiceID = setterInvoice.value;
     
@@ -268,7 +268,7 @@ function acceptInvoiceSigned(){
     var firebaseRef = firebase.database().ref();
     var updateThis =
     {     
-        assigneSign: "String"
+        assigneeSign: "String"
     };
     firebaseRef.child("signedInvoices/" + invoiceID).update(updateThis);
 }
@@ -290,3 +290,30 @@ function getInvoiceByUserID(id, collection){
     });
 }
 */
+
+// ACME gets invoices in function of full signed invoices
+export function getFullSignedInvoicesList(){
+
+    var list = []
+
+    var firebaseRef = firebase.database().ref();
+    return firebaseRef.once("value")
+        .then(function(snapshot) {
+
+        var i = 0
+        snapshot.child("signedInvoices/").forEach(function(data) {
+            var assigneSign = data.child("assigneeSign").val();
+            if(assigneSign != null){
+                list[i] = {
+                invoiceID = data.child("invoiceID").val(),
+                data = data.child("data").val(),
+                bankSign = data.child("bankSign").val(),
+                assigneSign = data.child("assigneeSign").val()
+                }
+                i++
+                console.log(toDebtorList)
+            }
+        });
+        return list;
+    });
+}
