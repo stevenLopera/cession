@@ -5,6 +5,7 @@
   "dependencies": {
     "firebase": "^5.5.8",
     "js-sha3": "^0.8.0",
+    "pidcrypt": "0.0.31",
     "react": "^16.6.1",
     "react-dom": "^16.6.1",
     "react-scripts": "2.0.5",

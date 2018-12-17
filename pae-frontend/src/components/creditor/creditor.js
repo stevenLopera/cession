@@ -19,7 +19,8 @@ import {
   Dimmer,
   Loader
 } from 'semantic-ui-react'  
-import { getInvoicesList} from '../../managers/firebaseManager';
+import { getInvoicesList, getBankPublicKey, createAcceptedInvoice } from '../../managers/firebaseManager';
+import { generateInvoiceHash, generateIdAndNifHash } from '../../utils/crypto_hash_sign';
 
 class Creditor extends Component {
   render() {
@@ -208,11 +209,7 @@ class RequestsComponent extends Component {
             <div style = {{marginTop: 30}}>
               <Button color = 'green' onClick = {this.validateRequest}>
                 <Icon name = 'check'></Icon>
-                  Validate invoice
-              </Button>
-              <Button color = 'red' onClick = {this.rejectRequest}>
-                <Icon name = 'cancel'></Icon>
-                  Reject
+                  Check invoice
               </Button>
               </div>
           </Modal.Content>
@@ -226,25 +223,57 @@ class RequestsComponent extends Component {
   }
 
 
-  validateRequest(request) {
+  validateRequest() {
     this.closeModal()
-    this.setState({showValidationMessage: true,
-                    isRequestValidated: true})
-    //TODO: accept request HOW??
+    this.setState({isLoading: true})
+    const invoiceHash = generateInvoiceHash(this.state.selectedRequest)
+    console.log(invoiceHash);
+
+
     
-    //TODO send public key to firebase
+    // Todo gene smart contract call: containsInvoice(invoiceHash) returns isValidate
+    // const isValidate = containsInvoice(invoiceHash)
+
     // callback:
-    this.onRequestValidated()
+    this.onRequestValidated(true)
   }
 
-  // public key sent to firebase callback
-  onRequestValidated() {
-      // Todo smart contract call: containsPublicKeyBank(hash(public_key))
-      // if true:
-      // 
-      // this.setState({showValidationMessage: true,
-      //                isRequestValidated: true})
+  onRequestValidated(isValidate) {
+    this.setState({
+      isRequestValidated: isValidate,
+      showValidationMessage: true,
+      isLoading: false
+    })
+  }
 
+  tramitInvoice = () => {
+    // invoice is validated from blockchain
+    console.log(this.state);
+    
+    getBankPublicKey().then((publicKey) => {
+      console.log(publicKey);
+      const hash = generateIdAndNifHash(this.state.selectedRequest.data.NIF, this.state.selectedRequest.data.invoiceID)
+      const acceptedInvoiceEntry = {
+        hash: hash,
+        bankPublicKey: publicKey
+      }
+      
+      createAcceptedInvoice(acceptedInvoiceEntry).then(() => {
+        this.setState({
+          isRequestValidated: true,
+          showValidationMessage: true,
+          isLoading: false
+        })
+      }).catch((error) => {
+        console.error(error);
+        this.setState({
+          isRequestValidated: false,
+          showValidationMessage: true,
+          isLoading: false
+        })
+      })
+      // send accepted entry
+    })
   }
  
   rejectRequest(request) {
@@ -252,10 +281,6 @@ class RequestsComponent extends Component {
     this.setState({showValidationMessage: true,
                     isRequestValidated: false})
     //TODO: reject request HOW??
-  }
-
-  showValidationMessage() {
-    return (<ValidateRequestComponent isValidate = {this.state.isRequestValidated}></ValidateRequestComponent>)
   }
 
   render() {
@@ -309,7 +334,9 @@ class RequestsComponent extends Component {
             <List items = {listItems} />
             {this.state.selectedRequest !== {} ? this.showModal() : null}
             <div style = {{textAlign: ''}}>
-              {this.state.showValidationMessage ? <ValidateRequestComponent isValidate = {this.state.isRequestValidated}></ValidateRequestComponent> : null}
+              {this.state.showValidationMessage ? <ValidateRequestComponent isValidate = {this.state.isRequestValidated}
+                tramitInvoice = {this.tramitInvoice}
+                ></ValidateRequestComponent> : null}
             </div>
           </div>
           :
@@ -320,15 +347,19 @@ class RequestsComponent extends Component {
 }
 
 class ValidateRequestComponent extends Component {
+
   state = {
     isValidate: this.props.isValidate,
     isOfferSent: false,
     offerComission: '',
     accountNumber: ''
   }
+  
+  
 
   componentWillReceiveProps(nextProps) {
     this.setState({ isValidate: nextProps.isValidate });  
+    console.log(this.props);
   }
 
   sendOffer() {
@@ -364,14 +395,24 @@ class ValidateRequestComponent extends Component {
     const MessageValidatedRequest = () => (
       <div style = {{marginTop: 30}}>
         <Message
-          icon='check'
-          header='Request validated'
-          content='The request has been validated and it is safe to proceed with the payment'
           color = 'green'
-          style = {{textAlign: 'left'}}
-        />
+          icon
+        >
+        
+          <Icon name = 'check'></Icon>
+          
+          <Message.Content>
+            <Message.Header>
+              Request validated
+            </Message.Header>
+            The request has been validated and it is safe to proceed with the payment
+            <div style={{textAlign: 'right'}}>
+              <Button style={{marginTop: 10}} className = 'green' onClick={() => this.props.tramitInvoice()}>Proceed</Button>
+            </div>
+            </Message.Content>
+        </Message>
 
-        {/* THIS IS HARDCODED, TO BE CHANGED WITH REAL INVOICE DATA */}
+        {/* THIS IS HARDCODED, TO BE CHANGED WITH REAL INVOICE DATA
         <div style={{textAlign:'center'}}>
           <div style = {{textAlign: 'left', display: 'inline-block'}}>
             <Segment color = 'black' padded style = {{maxHeight: 400, maxWidth: 250}}>
@@ -410,7 +451,7 @@ class ValidateRequestComponent extends Component {
           </Button>
 
           { this.state.isOfferSent ? <OfferSuccessSent /> : null }
-        </Form>
+        </Form> */}
       </div>
     )
 

@@ -28,7 +28,7 @@ import {
 import { getInvoicesList, resolveInvoice } from '../../managers/firebaseManager';
 //import { sha3_512 } from 'js-sha3';
 //import Web3 from 'web3';
-//import { acceptHash } from '../../contractUtils/smartContractDebtor';
+import { generateInvoiceHash } from '../../utils/crypto_hash_sign';
 
 class Debtor extends Component {
   render() {
@@ -293,6 +293,11 @@ class InvoiceForm extends Component {
 
     this.setState({isLoading: true})
     //var hash = keccak256.update(invoice);
+
+    if (isAccepted) {
+      generateInvoiceHash(this.state.activeItem)
+      // todo call acceptInvoice(hash) 
+    }
     
     resolveInvoice(this.state.activeItem.invoiceID).then(() => {
       console.log('invoiceResolved')

@@ -82,12 +82,12 @@ export function getAcmeSCAddress(){
 // Generar Public Key pb_k for the bank and set
 //let R = new TextDecoder("utf-8").decode(nacl.randomBytes(32));
 // Returns fixed Bank Public Key 
-function getBankPublicKey(){
+export function getBankPublicKey(){
     var firebaseRef = firebase.database().ref();
-    firebaseRef.once("value")
+    return firebaseRef.once("value")
         .then(function(snapshot) {
                 
-        return snapshot.child("constants/publicKey");
+        return snapshot.child("constants/bankPublicKey").val();
     });
 }
 
@@ -121,7 +121,7 @@ export function createInvoice(invoice){
         assigneeID: firebase.auth().currentUser.uid,
         // Data es el conjunto que se le envia al Gobierno
         data: {
-            RKey: "String",
+            RKey: invoice.RKey,
             NIF: invoice.nif,
             amount: invoice.amount,
             invoiceID: invoiceID,
@@ -131,7 +131,7 @@ export function createInvoice(invoice){
         toDebtorAccount: invoice.toDebtorAccount,
         toCreditorAccount: invoice.toCreditorAccount,
         SCAddress: invoice.acmeSCAddress,
-        KKey: "String",
+        KKey: invoice.KKey,
         debtorAuth: false
     };
     return firebaseRef.child("unsignedInvoices/" + invoiceID).update(updateThis).then((data) => {return data});
@@ -158,16 +158,9 @@ export function getInvoicesList(typeList){
         snapshot.child("unsignedInvoices/").forEach(function(data) {
             var debtorAuth = data.child("debtorAuth").val();
             if(debtorAuth == false){
-                //Falta por definir qué develvemos para montar la vista.
-                //Seguramente todo el data
-                 
-                    //case debtor, enviar el hash del dataset a la BC sin guardarlo en FB
-
-                var json = JSON.stringify(data.child("data").val())
                 toDebtorList[i] = data.child("data").val()
                 i++
                 console.log(toDebtorList)
-      
             } else {
                 toCreditorList[j] = {
                     KKey: data.child("KKey").val(),
@@ -198,8 +191,19 @@ export function resolveInvoice(invoiceID){
     return firebaseRef.child("unsignedInvoices").child(invoiceID).update({debtorAuth: true});
 }
 
+// Creates invoice using creditor form to send to BC 
+export function createAcceptedInvoice(invoice){
 
-/*
+    var firebaseRef = firebase.database().ref();
+    var updateThis =
+    {
+        hash: invoice.hash,
+        bankPublicKey: invoice.bankPublicKey
+    };
+        return firebaseRef.child("acceptedInvoices/" + invoice.hash).update(updateThis).then((data) => {return data});
+    }
+
+
 
 //IDEA: Borrar la JSON generada anteriormente cuando el banco publica 
 //su dataset privada.
@@ -209,6 +213,7 @@ function deleteInvoiceByInvoiceID(id, collection){
     firebaseRef.child(collection + "Invoices/"+ id).remove();
 }
 
+/*
 // Creates new invoice collection accepted by the debtor and bank.
 function acceptInvoiceSigned(){
     

@@ -19,6 +19,7 @@ import {
   Form
 } from 'semantic-ui-react'  
 import { getAcmeSCAddress, createInvoice } from '../../managers/firebaseManager';
+import { generateInvoiceK, generateRKey } from '../../utils/crypto_hash_sign';
 
 class Assignee extends Component {
   render() {
@@ -71,7 +72,7 @@ class DesktopContainer extends Component {
               </GridColumn>
               <GridColumn width = {13}>
                 <Container >
-                  {this.state.isTramitShown ? <InvoiceForm acmeSCAddress = {this.state.acmeSCAddress}/> : <InvoiceSearch />}
+                  {this.state.isTramitShown ? <InvoiceForm acmeSCAddress = {this.state.acmeSCAddress} style = {{maxHeight: window}}/> : <InvoiceSearch />}
                 </Container>
               </GridColumn>
             </GridRow>
@@ -203,7 +204,9 @@ class InvoiceForm extends Component {
                   expirationDate: '',
                   toDebtorAccount: '',
                   toCreditorAccount: '',
-                  acmeSCAddress: ''
+                  acmeSCAddress: '',
+                  KKey : '',
+                  RKey: ''
                 };
     //TODO: Confirm the fields needed
     this.handleChange = this.handleChange.bind(this);
@@ -227,7 +230,12 @@ class InvoiceForm extends Component {
   handleSubmit(event) {
     //TODO: Upload invoice to the blockchain and Sign it
     console.log(this.state)
+    
     if(this.validateForm()){
+      this.setState({
+        KKey: generateInvoiceK(),
+        RKey: generateRKey()
+      })
       createInvoice(this.state).then(() => {
         window.alert('Successfully uploaded invoice')
       }).catch((error) => (console.error(error)))
