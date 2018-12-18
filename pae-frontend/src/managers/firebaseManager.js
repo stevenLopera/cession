@@ -284,37 +284,55 @@ export function createAcceptedInvoice(invoice){
 
 //IDEA: Borrar la JSON generada anteriormente cuando el banco publica 
 //su dataset privada.
-function deleteInvoiceByInvoiceID(id, collection){
-    //collection = {signed, unsigned i accepted}
-    var firebaseRef = fire.database().ref();
+export function deleteInvoiceByInvoiceID(id, collection){
+    //collection se le puede pasar signed o unsigned para decidir de donde descarga
+    var firebaseRef = firebase.database().ref();
     firebaseRef.child(collection + "Invoices/"+ id).remove();
+}
+
+export function getAcceptedInvoice(invoiceHash) {
+    var firebaseRef = firebase.database().ref();
+    return firebaseRef.once('value').then(function(snapshot) {
+        return snapshot.child('acceptedInvoices/' + invoiceHash).val();
+    })
 }
 
 /*
 // Creates new invoice collection accepted by the debtor and signed by the bank.
-function signInvoiceAccepted(){
+function createInvoiceSigned(String bankComission, String bankAccount){
     
     var invoiceID = setterInvoice.value;
     
     var firebaseRef = fire.database().ref();
     var comission = firebaseRef.once("constants/ACMEComission").val();
     var acmeAccount = firebaseRef.once("constants/ACMEAccount").val();
+    var kKey = firebaseRef.once("unsignedInvoices/" + invoiceID + "/kKey").val();
+    var NIF = firebaseRef.once("unsignedInvoices/" + invoiceID + "/data/NIF").val();
+    var amount = firebaseRef.once("unsignedInvoices/" + invoiceID + "/data/NIF").val();
+    var finalAmount = amount - acmeComission - bankComission;
+    var assigneeAccount = firebaseRef.once("unsignedInvoices/" + invoiceID + "/toCreditorAccount").val();
+
+    let data = {
+        nif : NIF,
+        invoiceID: invoiceID,
+        amount: finalAmount,
+        acmeAccount: acmeAccount,
+        acmeComission: acmeComission,
+        toCreditorAccount: assigneeAccount
+    }
+    var json = JSON.stringify(data)
+    // encripta
+    let encrip= aes.encryptText(data, kKey); // la k la recibio de ACME
+    // firma
+    let bankSign = nacl.sign(toUint8Array(""), clavesB.secretKey);
+    //  envia  encrip_firmadoB a Assignee y Acme  OFF blockchain
 
     var updateThis =
     {   
         InvoiceID: "String",
-        data : "String",
-        /*data:{
-            invoiceID: "String",  
-            NIF: "String",
-            amount: "Double",//Amount - comissions  
-            toCreditorAccount: "String"
-            comission: comission
-            ACMEaccount: acmeAccount
-            //Se tiene que cifraf con K toda la JSON
-        },        bankAccount: "String",
-        bankSign: "String"
-
+        data : encrip,
+        bankAccount: bankAccount,
+        bankSign: bankSign
     };
     firebaseRef.child("signedInvoices/" + invoiceID).update(updateThis);
 }
@@ -368,3 +386,28 @@ function getInvoiceByUserID(id, collection){
 }
 */
 
+// ACME gets invoices in function of full signed invoices
+export function getFullSignedInvoicesList(){
+
+    var list = []
+
+    var firebaseRef = firebase.database().ref();
+    return firebaseRef.once("value")
+        .then(function(snapshot) {
+
+        var i = 0
+        snapshot.child("signedInvoices/").forEach(function(data) {
+            var assigneSign = data.child("assigneeSign").val();
+            if(assigneSign != null){
+                list[i] = {
+                invoiceID : data.child("invoiceID").val(),
+                data : data.child("data").val(),
+                bankSign : data.child("bankSign").val(),
+                assigneSign : data.child("assigneeSign").val()
+                }
+                i++
+            }
+        });
+        return list;
+    });
+}
