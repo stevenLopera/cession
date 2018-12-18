@@ -19,8 +19,9 @@ import {
   Dimmer,
   Loader
 } from 'semantic-ui-react'  
-import { getInvoicesList, getBankPublicKey, createAcceptedInvoice } from '../../managers/firebaseManager';
+import { getInvoicesList, getBankPublicKey, createAcceptedInvoice, getInvoiceByID, deleteInvoiceByInvoiceID } from '../../managers/firebaseManager';
 import { generateInvoiceHash, generateIdAndNifHash } from '../../utils/crypto_hash_sign';
+import { isNullOrUndefined } from 'util';
 
 class Creditor extends Component {
   render() {
@@ -30,11 +31,28 @@ class Creditor extends Component {
 
 class DesktopContainer extends Component {
   state = {
-    isRequestsShown: true
+    isRequestsShown: true,
+    activeChildren: 'requests'
   }
 
-  onMenuOptionChange = () => {
-    this.setState({isRequestsShown : !this.state.isRequestsShown})
+  onMenuOptionChange = (active) => {
+    this.setState({isRequestsShown : 
+      !this.state.isRequestsShown,
+      activeChildren: active
+    })
+  }
+
+  currentChildren() {
+    switch (this.state.activeChildren) {
+      case 'requests':
+        return (<RequestsComponent/>)
+      case 'payments':
+        return (<PaymentsComponent></PaymentsComponent>)
+      case 'signments':
+        return (<SignmentsComponent></SignmentsComponent>)
+      default:
+        return null
+    }
   }
 
   render() {
@@ -55,7 +73,7 @@ class DesktopContainer extends Component {
               </GridColumn>
               <GridColumn width = {13}>
                 <Container >
-                  {this.state.isRequestsShown ? <RequestsComponent /> : <PaymentsComponent />} 
+                  {this.currentChildren()} 
                 </Container>
               </GridColumn>
             </GridRow>
@@ -74,10 +92,10 @@ DesktopContainer.propTypes = {
 class SideMenuVertical extends Component {
   state = { activeItem: 'requests' }
 
-  handleItemClick = (e, { name }) => {
-    if (this.state.activeItem !== name) {
-      this.setState({ activeItem: name })
-      this.props.changeMenuOption();
+  handleItemClick = (e, { id }) => {
+    if (this.state.activeItem !== id) {
+      this.setState({ activeItem: id })
+      this.props.changeMenuOption(id  );
     }
   }
 
@@ -85,19 +103,35 @@ class SideMenuVertical extends Component {
     const { activeItem } = this.state
 
     return (
-      <Menu pointing secondary vertical inverted>
-        <Menu.Item
-          name='requests'
-          active={  activeItem === 'requests'}
-          onClick={this.handleItemClick}
-        />
-        <Menu.Item
-          name='payments'
-          id = 'payments'
-          active={activeItem === 'payments'}
-          onClick={this.handleItemClick}
-        />
-      </Menu>
+      <div>
+        <Header as='h2' style = {{marginTop: 25}} inverted>
+          <Icon name='user circle' />
+          <Header.Content>
+            Creditor
+          </Header.Content>
+        </Header>
+        <Menu pointing secondary vertical inverted>
+          <Menu.Item
+            name='requests'
+            id = 'requests'
+            active={  activeItem === 'requests'}
+            onClick={this.handleItemClick}
+          />
+          
+          <Menu.Item
+            name='Signatures'
+            id = 'signments'
+            active={activeItem === 'signments'}
+            onClick={this.handleItemClick}
+          />
+          <Menu.Item
+            name='payments'
+            id = 'payments'
+            active={activeItem === 'payments'}
+            onClick={this.handleItemClick}
+          />
+        </Menu>
+      </div>
     )
   }
 }
@@ -121,7 +155,8 @@ class RequestsComponent extends Component {
       hasRequests: false,
       isLoading: true,
       requests: [],
-      hasSelectedRequest: false
+      hasSelectedRequest: false,
+      showAcceptedMessage: false
     } 
     this.getRequests = this.getRequests.bind(this)
   }
@@ -261,8 +296,9 @@ class RequestsComponent extends Component {
       createAcceptedInvoice(acceptedInvoiceEntry).then(() => {
         this.setState({
           isRequestValidated: true,
-          showValidationMessage: true,
-          isLoading: false
+          showValidationMessage: false,
+          isLoading: false,
+          showAcceptedMessage: true
         })
       }).catch((error) => {
         console.error(error);
@@ -305,6 +341,8 @@ class RequestsComponent extends Component {
     }
 
       const EmptyRequests = () => (
+        this.state.isLoading ?
+        null :
         <Segment placeholder style={{minHeight: 600}}>
               <Header icon>
                 <Icon name='file outline' />
@@ -314,29 +352,59 @@ class RequestsComponent extends Component {
                 <Icon name = 'redo'></Icon>
                 Reload
               </Button>
-          </Segment>
+          </Segment> 
+          
       )
 
+      const MessageAcceptedRequest = () => (
+        <div style = {{marginTop: 30}}>
+          <Message
+            color = 'green'
+            icon
+          >
+            <Icon name = 'check'></Icon>
+            <Message.Content>
+              <Message.Header>
+                Request accepted
+              </Message.Header>
+              The request has been accepted
+              {/* <div style={{textAlign: 'right'}}>
+                <Button style={{marginTop: 10}} className = 'green' onClick={() => this.props.tramitInvoice()}>Proceed</Button>
+              </div> */}
+              </Message.Content>
+          </Message>
+        </div>
+      )
       return(
         
         <div>
+           
           {this.state.isLoading ? 
           <Dimmer active>
             <Loader></Loader>
           </Dimmer>
         :
         null}
-          {this.state.hasRequests ? 
+          {this.state.hasRequests  ? 
           <div style = {{
             display: 'inline-block',
-            textAlign: "left"
+            textAlign: "left",
+            marginTop: 10
           }}>
+            <Header as='h2' style = {{marginTop: 25}}>
+              <Icon name='file outline' />
+              <Header.Content>
+                Invoice requests
+                <Header.Subheader>Start with the process</Header.Subheader>
+              </Header.Content>
+            </Header>
             <List items = {listItems} />
             {this.state.selectedRequest !== {} ? this.showModal() : null}
             <div style = {{textAlign: ''}}>
               {this.state.showValidationMessage ? <ValidateRequestComponent isValidate = {this.state.isRequestValidated}
                 tramitInvoice = {this.tramitInvoice}
                 ></ValidateRequestComponent> : null}
+                {this.state.showAcceptedMessage ? <MessageAcceptedRequest/> : null}
             </div>
           </div>
           :
@@ -490,15 +558,68 @@ class PaymentsComponent extends Component {
 
   state = {
     hasPayments: false,
-    payments: []
+    payments: [],
+    isLoading: false
   }
 
   componentDidMount() {
     this.getPayments()
   }
 
+  handleChange(event) {
+    this.setState({[event.target.name]: event.target.value})
+  }
+
+  handleSubmit() {
+    this.setState({
+      isLoading: true // hardcoded
+    })
+    
+    if (this.state.invoiceID && this.state.nif.length > 0) {
+      console.log(this.state);
+      getInvoiceByID(this.state.invoiceID).then((invoice) => {
+        console.log(invoice);
+        
+        if (!isNullOrUndefined(invoice)) {
+          this.setState({
+            selectedRequest: invoice,
+            showInvoiceToPay: true,
+            isLoading: false,
+            showEmptySearch: false
+          })
+        } else {
+          this.setState({
+            showInvoiceToPay: false,
+            isLoading: false,
+            showEmptySearch: true
+          })
+        }
+      })
+      
+      const hash = generateIdAndNifHash(this.state.nif, this.state.invoiceID)
+      // containsPublicKeyBank(hash).then((isAccepted) => {
+      //     if(isAccepted) {
+      //       deleteInvoiceByInvoiceID(hash, 'accepted').catch((error) => console.error(error))
+      //     }
+      //     this.setState({
+      //        invoiceNotApprovedYet: isAccepted,
+      //        showApprovedMessage: true      
+      //     }) 
+      // })
+    } else {
+      this.setState({
+        isLoading:false
+      })
+      alert('Please fill the form correctly')
+    }
+  }
+
+
   getPayments() {
     // TODO: get payments from SM???
+    // getFullSignedInvoicesList().then(() => {
+
+    // })
     this.setState({
       hasPayments: true, 
       payments: [
@@ -526,6 +647,10 @@ class PaymentsComponent extends Component {
 
   paySelectedInvoice() {
     // todo set isPayed attribute to true firebase
+    alert('Payed.')
+    this.setState({
+      showInvoiceToPay: false
+    })
   }
 
   showModal() {
@@ -570,10 +695,10 @@ class PaymentsComponent extends Component {
     )
 
     const EmptyPayments = () => (<div>
-      <Segment placeholder style={{minHeight: 600}}>
+      <Segment placeholder>
         <Header icon>
           <Icon name='ethereum' />
-          There are not any payments to be done at the moment. Try refreshing the page or come back later.
+          We couldn't find any invoice to pay with this data. Try refreshing the page or come back later.
         </Header>
         <Button onClick = {() => window.location.reload()}>
           <Icon name = 'redo'></Icon>
@@ -582,10 +707,221 @@ class PaymentsComponent extends Component {
       </Segment>
     </div>)
 
+    const InvoiceToPay = () => (
+      <div style={{textAlign:'center'}}>
+        <div style = {{textAlign: 'left', display: 'inline-block'}}>
+          <Segment color = 'black' padded style = {{maxHeight: 400, maxWidth: 250}}>
+            <List>
+              <List.Item style = {{fontSize: 20}}>
+                <List.Header>{this.state.selectedRequest.data.invoiceID}</List.Header>
+              </List.Item>
+              <List.Item>
+                <List.Icon name='euro' />
+                <List.Content>Amount: {this.state.selectedRequest.data.amount}€</List.Content>
+              </List.Item>
+              <List.Item>
+                <List.Icon name='calendar alternate outline' />
+                <List.Content>
+                  Emission date: {this.state.selectedRequest.data.emissionDate}
+                </List.Content>
+              </List.Item>
+              <List.Item>
+                <List.Icon name='calendar times outline' />
+                <List.Content>
+                  Expiration date: {this.state.selectedRequest.data.expirationDate}
+                </List.Content>
+              </List.Item>
+              <List.Item>
+                <List.Icon name='id card outline' />
+                <List.Content>
+                  NIF: {this.state.selectedRequest.data.NIF}
+                </List.Content>
+              </List.Item>
+            </List>
+            <div style={{textAlign : 'right'}}>
+              <Button color = 'red'>
+                <Icon name = 'cancel'></Icon>
+                  Cancel
+              </Button>
+              <Button color = 'green' onClick = {this.paySelectedInvoice.bind(this)}>
+                <Icon name = 'payment'></Icon>
+                  Pay
+              </Button>
+            </div>
+          </Segment>
+        </div>
+      </div>
+    )
+
 
     return(
       <div>
-        {this.state.hasPayments ? <PaymentsList /> : <EmptyPayments/>}
+        <Header as='h2' style = {{marginTop: 25}}>
+          <Icon name='payment' />
+          <Header.Content>
+            Introduce client data
+            <Header.Subheader>Proceed with the invoice payment</Header.Subheader>
+          </Header.Content>
+        </Header>
+        <Grid>
+          <GridColumn width = {6}>
+            <Form>
+              <Form.Input type='text' name = 'nif' value = {this.state.nif} label='NIF' placeholder='1726341Q' onChange = {this.handleChange.bind(this)}/>
+              <Form.Input type='number' name = 'invoiceID' value = {this.state.invoiceID} label='Invoice number'
+                          placeholder='80085' onChange = {this.handleChange.bind(this)}/>          
+              <Button type='submit' className = 'primary' onClick = {this.handleSubmit.bind(this)}>
+                  <Icon name = 'search' />
+                  Search
+              </Button>
+            </Form>
+          </GridColumn>
+          <GridColumn width = {6}>
+            {this.state.isLoading ? 
+              <Dimmer active>
+                <Loader></Loader>
+              </Dimmer>
+            :
+            null}
+            {this.state.showInvoiceToPay ? <InvoiceToPay/> : null}
+            {this.state.showEmptySearch ? <EmptyPayments/>: null}
+          </GridColumn>
+        </Grid>
+      </div>
+    )
+  }
+}
+
+// SIGNATURES
+
+class SignmentsComponent extends Component {
+  state = {
+    nif: '',
+    invoiceID: '',
+    isLoading: false,
+    invoiceNotApprovedYet: false,
+    showApprovedMessage: false,
+    showSignForm: false,
+    accountNumber: '',
+    comission: ''
+  }
+
+  handleChange(event) {
+    this.setState({[event.target.name]: event.target.value})
+  }
+
+  handleSubmit() {
+    
+    if (this.state.invoiceID && this.state.nif.length > 0) {
+      console.log(this.state);
+      
+      this.setState({
+        isLoading: true,
+        invoiceNotApprovedYet: true, // hardcoded
+        showApprovedMessage: true    // hardcoded
+      })
+      const hash = generateIdAndNifHash(this.state.nif, this.state.invoiceID)
+      // containsPublicKeyBank(hash).then((isAccepted) => {
+      //     if(isAccepted) {
+      //       deleteInvoiceByInvoiceID(hash, 'accepted').catch((error) => console.error(error))
+      //     }
+      //     this.setState({
+      //        invoiceNotApprovedYet: isAccepted,
+      //        showApprovedMessage: true      
+      //     }) 
+      // })
+    } else {
+      alert('Please fill the form correctly')
+    }
+  }
+
+  signInvoice() {
+    // encrypt with k the data
+    // Borra la factura de invoice
+    // Añade el acc number del bank
+    // Sign
+    this.setState({
+      showSignForm: true
+    })
+    this.handleSignFormChange = this.handleSignFormChange.bind(this)
+  }
+
+  handleSignFormChange(event) {
+    console.log(event.target.name)
+    console.log(event.target.value)
+    this.setState({[event.target.name]: event.target.value})
+    console.log(this.state);
+    
+  }
+
+  handleSignFormSubmit() {
+    // created signed invoice
+    console.log(this.state);
+    alert('Successfully signed invoice, now you will be redirected to the payments section')
+    const payments = document.getElementById('payments')
+    payments.click()
+  }
+
+  render(){
+
+    const ApprovedMessage = (isApproved) => (
+      <Message color = {isApproved ? 'green':'red'}>
+        <Icon name = {isApproved ? 'check':'cancel'}></Icon>
+            <Message.Content>
+              <Message.Header>
+              {isApproved ? 'Approved Invoice': 'Invoice not reviewed yet'}
+              </Message.Header>
+              {isApproved ? 'The invoice was successfully approved and can be safely signed.' : 'The invoice has not been reviewed yet and you cannot proceed with the signature.'}
+              {isApproved ? 
+                <div style={{textAlign: 'right'}}>
+                  <Button style={{marginTop: 10}} className = 'green' onClick={this.signInvoice.bind(this)}>Sign</Button>
+                </div> : null
+              }
+              </Message.Content>
+      </Message>
+    )
+
+    const InvoiceSignForm = () => {
+      return(
+        <Form>
+            <Form.Input type='text' name = 'accountNumber' value = {this.state.accountNumber} label='Account number' placeholder='ES67 1627 1263 1263 1234' onChange = {this.handleSignFormChange}/>
+            
+            <Form.Input type='number' name = 'comission' value = {this.state.comission} label='Comission(%)' placeholder='3%' onChange = {this.handleSignFormChange.bind(this)}/>                   
+            <Button type='submit' className = 'primary' onClick = {this.handleSignFormSubmit.bind(this)}>
+                <Icon name = 'check' />
+                Confirm signature
+            </Button>
+        </Form>
+      )
+    }
+
+    return (
+      // <Segment className='huge'>ARRIBA ESPAÑA</Segment>
+      <div>
+        
+        <Header as='h2' style = {{marginTop: 25}}>
+          <Icon name='search' />
+          <Header.Content>
+            Introduce client data
+            <Header.Subheader>Search for invoices to sign</Header.Subheader>
+          </Header.Content>
+        </Header>
+        <Grid>
+          <GridColumn width= {6}>
+            <Form>
+                <Form.Input type='text' name = 'nif' value = {this.state.nif} label='NIF' placeholder='1726341Q' onChange = {this.handleChange.bind(this)}/>
+                <Form.Input type='number' name = 'invoiceID' value = {this.state.invoiceID} label='Invoice number'
+                            placeholder='80085' onChange = {this.handleChange.bind(this)}/>          
+                <Button type='submit' className = 'primary' onClick = {this.handleSubmit.bind(this)}>
+                    <Icon name = 'search' />
+                    Search
+                </Button>
+            </Form>
+            {this.state.showApprovedMessage ? <ApprovedMessage isApproved = {this.state.invoiceNotApprovedYet}></ApprovedMessage> : null}
+          </GridColumn>
+          <GridColumn width= {6}>
+            {this.state.showSignForm ? <InvoiceSignForm/> : null}
+          </GridColumn>
+        </Grid>
       </div>
     )
   }

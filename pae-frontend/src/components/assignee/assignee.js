@@ -9,6 +9,9 @@ import {
   Icon,
   Image,
   List,
+  Dimmer,
+  Loader,
+  Message,
   Menu,
   Responsive,
   Segment,
@@ -18,12 +21,12 @@ import {
   GridRow,
   Form
 } from 'semantic-ui-react'  
-import { getAcmeSCAddress, createInvoice } from '../../managers/firebaseManager';
+import { getAcmeSCAddress, createInvoice, getInvoicesList } from '../../managers/firebaseManager';
 import { generateInvoiceK, generateRKey } from '../../utils/crypto_hash_sign';
 
 class Assignee extends Component {
   render() {
-    return <ResponsiveContainer/>;
+    return <DesktopContainer/>;
   }
 }
 
@@ -173,18 +176,26 @@ class SideMenuVertical extends Component {
     const { activeItem } = this.state
 
     return (
-      <Menu pointing secondary vertical inverted>
-        <Menu.Item
-          name='tramitar'
-          active={  activeItem === 'tramitar'}
-          onClick={this.handleItemClick}
-        />
-        <Menu.Item
-          name='consultar'
-          active={activeItem === 'consultar'}
-          onClick={this.handleItemClick}
-        />
-      </Menu>
+      <div>
+        <Header as='h2' style = {{marginTop: 25}} inverted>
+          <Icon name='user circle' />
+          <Header.Content>
+            Assignee
+          </Header.Content>
+        </Header>
+        <Menu pointing secondary vertical inverted>
+          <Menu.Item
+            name='tramitar'
+            active={  activeItem === 'tramitar'}
+            onClick={this.handleItemClick}
+          />
+          <Menu.Item
+            name='consultar'
+            active={activeItem === 'consultar'}
+            onClick={this.handleItemClick}
+          />
+        </Menu>
+      </div>
     )
   }
 }
@@ -192,6 +203,19 @@ class SideMenuVertical extends Component {
 SideMenuVertical.propTypes = {
   changeMenuOption : PropTypes.func
 }
+
+//
+//
+//
+//
+//
+//
+//Invoice Form
+//
+//
+//
+//
+//
 
 class InvoiceForm extends Component {
   constructor(props) {
@@ -337,186 +361,300 @@ class InvoiceForm extends Component {
   }
 }
 
-
+//
+//
+//
+//
+//
+//
+//Consultar 
+//
+//
+//
+//
+//
+//
 class InvoiceSearch extends Component{
 
   constructor(props) {
     super(props);
-    this.state = {invoiceKey: '',
-                  hasResults: false};
-
-    this.handleChange = this.handleChange.bind(this);
-    this.handleSubmit = this.handleSubmit.bind(this);
+    //this.handleChange = this.handleChange.bind(this);
+    this.signInvoice = this.signInvoice.bind(this);
+    this.dontSignInvoice = this.dontSignInvoice.bind(this);
+    //this.rejectRequest = this.rejectRequest.bind(this);
+    this.state = {
+      selectedRequest: {},
+      showModal: false,
+      showValidationMessage: false,
+      isInvoiceSigned: true,
+      hasRequests: false,
+      isLoading: true,
+      requests: [],
+      hasSelectedRequest: false
+    } 
+    this.getRequests = this.getRequests.bind(this)
   }
 
-  handleChange(event) {
-    this.setState({invoiceKey: event.target.value});
+  componentDidMount() {
+    this.getRequests()
   }
 
-  handleSubmit(event) {
-    //alert('A key was submitted: ' + this.state.invoiceKey);
-    event.preventDefault();
-    //TODO: Query the smart contract
-    // add a loading spinner, hide the form and show result?
-    this.setState({
-      hasResults: true
+  getRequests() {
+    getInvoicesList('assignee').then((res) => {
+      this.setState({
+        requests: res,
+        isLoading: false,
+        hasRequests: res.length > 0
+      })
     })
   }
-
-  render() {
-    return (
-      <Container>
-        <Form onSubmit={this.handleSubmit}>
-          <Form.Field>
-            <label>Invoice key</label>
-            <input placeholder='8c8182d1823ds123' 
-              name = 'invoiceKey'
-              value = {this.state.invoiceKey}
-              type = 'text'
-              onChange = {this.handleChange}
-            />
-          </Form.Field>
-          <Button className='primary' type='submit'>Search invoice</Button>
-        </Form>
-        <Container style = {{
-          marginTop: 20,
-          textAlign: 'center'
-        }}>
-          {this.state.hasResults ? <OffersResults results={[]}/> : null}
-        </Container>
-      </Container>
-    )
-  }
-}
-
-
-class OffersResults extends Component {
-  
-  constructor(props) {
-    super(props);
-    this.state = {
-      activeItem:'',
-      showModal: false
-    };
-  }
-
-  results = [{
-    name: 'Bankia',
-    comission: '3'
-  },
-  {
-    name: 'BBVA',
-    comission: '5'
-  },
-  {
-    name: 'La Caixa',
-    comission: '7'
-  }]
 
   handleItemClick = (event) => {
     // Only way found to detect the element clicked
-    const activeItem = event.target.parentNode.parentNode.id
+    const activeItemName = event.target.parentNode.parentNode.id
     
-    console.log(activeItem)
+    const activeItem = this.state.requests.find((item) => (item.data.invoiceID === activeItemName))
     this.setState({
-      activeItem: activeItem,
-      showModal: true
+      selectedRequest: activeItem,
+      showModal: true,
+      hasSelectedRequest: true
     })
   }
 
+  getInvoiceDetailsView = () => (
+   <div style={{textAlign:'center'}}>
+        <div style = {{textAlign: 'left', display: 'inline-block'}}>
+          <Segment color = 'black' padded style = {{maxHeight: 400, minWidth: 250}}>
+            <List>
+              <List.Item style = {{fontSize: 20}}>
+                <List.Header>Invoice info</List.Header>
+              </List.Item>
+              <List.Item>
+                <List.Icon name='calendar alternate outline' />
+                <List.Content>
+                  Emission date: {this.state.selectedRequest.data.emisionDate}
+                </List.Content>
+              </List.Item>
+              <List.Item>
+                <List.Icon name='calendar times outline' />
+                <List.Content>
+                  Expiration date: {this.state.selectedRequest.data.expirationDate}
+                </List.Content>
+              </List.Item>
+              <List.Item>
+                <List.Icon name='balance scale'/>
+                <List.Content>
+                  Bank Account: {this.state.selectedRequest.toCreditorAccount}
+                </List.Content>
+              </List.Item>
+              <List.Item>
+                <List.Icon name='pen square'/>
+                <List.Content>
+                  Bank Signature: que pongo¿? {this.state.selectedRequest.toDebtorAccount /*firma bank?*/}
+                </List.Content>
+              </List.Item>
+            </List>
+          </Segment>
+        </div>
+      </div>
+
+  )
+
   showModal() {
+    console.log(this.state.selectedRequest);
 
-    const activeItem = this.results.find((item) => item.name === this.state.activeItem)
-    console.log(this.results);
-
-    if(activeItem) {
+    if(this.state.selectedRequest) {      
       return (
         <Modal
-         open = {this.state.showModal}
-           onClose = {() => this.setState({showModal: false})}
+          open = {this.state.showModal}
+          onClose = {() => this.setState({showModal: false})}
         >
-          <Modal.Header>{activeItem.name}</Modal.Header>
+          <Modal.Header>Invoice details</Modal.Header>
           <Modal.Content>
-            {/* <Image wrapped size='medium' src='https://react.semantic-ui.com/images/avatar/large/rachel.png' /> */}
-            <Modal.Description>
-              <Header>Offer details</Header>
-              <p>Comission = {activeItem.comission}%</p>
-              <p>Is it okay to use this photo?</p>
-            </Modal.Description>
-            <Button className='primary-green' onClick = {this.acceptActiveOffer}>Accept</Button>
+            {this.state.hasSelectedRequest ? this.getInvoiceDetailsView(): null}
+            <div style = {{marginTop: 30}}>
+              <Button color = 'green' onClick = {this.signInvoice}>
+                <Icon name = 'check'></Icon>
+                  Sign Invoice
+              </Button>
+              <Button color = 'grey' onClick = {this.dontSignInvoice}>
+                <Icon name = 'undo'></Icon>
+                  Go back
+              </Button>
+              </div>
           </Modal.Content>
         </Modal>
       )
     }
   }
 
-  onModalClose() {
-    this.setState({
-      showModal: false
-    })
+  closeModal() {
+    this.setState({showModal: false})
   }
 
-  acceptActiveOffer() {
-    window.alert('Offer accepted')
+
+  
+  signInvoice() {
+    this.closeModal()
+    this.setState({showValidationMessage: true,
+                    isInvoiceSigned: true})
+
+    this.onRequestValidated()
+  }
+
+  dontSignInvoice() {
+    this.closeModal()
+    this.setState({showValidationMessage: true,
+                    isInvoiceSigned: false})
+    this.onRequestValidated()
+  }
+
+  // public key sent to firebase callback
+  onRequestValidated() {
+      // Todo smart contract call: containsPublicKeyBank(hash(public_key))
+      // if true:
+      // 
+      // this.setState({showValidationMessage: true,
+      //                isInvoiceSigned: true})
+
+  }
+ 
+  /*rejectRequest(request) {
+    this.closeModal()
+    this.setState({showValidationMessage: true,
+                    isInvoiceSigned: false})
+    //TODO: reject request HOW??
+  }*/
+
+  showValidationMessage() {
+    return (<SignInvoiceComponent isSigned = {this.state.isInvoiceSigned}></SignInvoiceComponent>)
   }
 
   render() {
 
-    // const {results} = this.props.results
+    var listItems = null
 
-    const results = [{
-      name: 'Bankia',
-      comission: '3'
-    },
-    {
-      name: 'BBVA',
-      comission: '5'
-    },
-    {
-      name: 'La Caixa',
-      comission: '7'
-    }]
+    if (this.state.requests) {
+      const list = this.state.requests
+      console.log(this.state.requests);
+      
+      listItems = list.map((result) => 
+        
+        <List.Item style = {{minWidth: 250}} key= {result.data.invoiceID}>
+        {console.log(result)}
+          <div id={result.data.invoiceID} onClick = {this.handleItemClick}>
+            <Card
+              as = 'a'
+              header={result.data.invoiceID}
+              id = {result.data.invoiceID}
+            />  
+          </div>
+        </List.Item>
+      )
+    }
 
+      const EmptyInvoices = () => (
+        <Segment placeholder style={{minHeight: 600}}>
+              <Header icon>
+                <Icon name='file outline' />
+                There are not any invoices at the moment. Try refreshing the page or come back later.
+              </Header>
+              <Button onClick = {() => window.location.reload()}>
+                <Icon name = 'redo'></Icon>
+                Reload
+              </Button>
+          </Segment>
+      )
 
-    //TODO: Display cards according results found
-
-    const listItems = results.map((result) => 
-      <List.Item key= {result.name}>
-        <div id={result.name} onClick = {this.handleItemClick}>
-          <Card
-          // href='#'
-            as = 'a'
-            header={result.name}
-            meta='Bank'
-            description= {'Comission: '+ result.comission + '%'}
-            id = {result.name}
-          />  
+      return(
+        
+        <div>
+          {this.state.isLoading ? 
+          <Dimmer active>
+            <Loader></Loader>
+          </Dimmer>
+        :
+        null}
+          {this.state.hasRequests ? 
+          <div style = {{
+            display: 'inline-block',
+            textAlign: "left"
+          }}>
+            <List items = {listItems} />
+            {this.state.selectedRequest !== {} ? this.showModal() : null}
+            <div style = {{textAlign: ''}}>
+              {this.state.showValidationMessage ? <SignInvoiceComponent isSigned = {this.state.isInvoiceSigned}></SignInvoiceComponent> : null}
+            </div>
+          </div>
+          :
+          <EmptyInvoices/>}
         </div>
-      </List.Item>
+      )
+  }
+}
+
+class SignInvoiceComponent extends Component {
+  state = {
+    isSigned: this.props.isSigned,
+    isOfferSent: false
+  }
+
+  componentWillReceiveProps(nextProps) {
+    this.setState({ isSigned: nextProps.isSigned });  
+  }
+
+  sendOffer() {
+    // TODO send offer
+    if (this.state.offerComission && this.state.accountNumber) {
+      // TODO send offer to their assignee via firebase
+      // check Esquema final
+      // offer:
+      // [accountNumber, hash(invoiceData, requestDetails)]
+      // sign that shit above
+
+      // callback:
+      this.setState({
+        isOfferSent: true
+      })
+    }
+    console.log(this.state)
+  }
+
+  handleChange(event) {
+    console.log(event.target)
+    this.setState({[event.target.name]: event.target.value})
+  }
+
+
+
+  render() {
+    
+    const MessageValidatedRequest = () => (
+      <div style = {{marginTop: 30}}>
+        <Message
+          icon='check'
+          header='Request validated'
+          content='The request has been validated and it is safe to proceed with the payment'
+          color = 'green'
+          style = {{textAlign: 'left'}}
+        />
+      </div>
     )
+    
+    const MessageNotValidatedRequest = () => (
+      <Message
+        icon='cancel'
+        header='Invoice not signed'
+        content='The invoice has not been signed.'
+        color = 'grey'
+      />
+    )
+
     return(
-      <div style = {{
-        display: 'inline-block',
-        textAlign: "left"
-      }}>
-        <List items = {listItems} />
-        {this.showModal()}
+      <div style={{maxWidth: 800, minWidth:800}} >
+        {this.state.isSigned ? (<MessageValidatedRequest />) : (<MessageNotValidatedRequest />)}
       </div>
     )
   }
 }
-
-
-
-const ResponsiveContainer = ({ children }) => (
-  <div>
-    <DesktopContainer>{children}</DesktopContainer>
-    <MobileContainer>{children}</MobileContainer>
-  </div>
-)
-
-ResponsiveContainer.propTypes = {
-  children: PropTypes.node,
-}
-
 export default Assignee

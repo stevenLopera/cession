@@ -169,18 +169,26 @@ class SideMenuVertical extends Component {
     const { activeItem } = this.state
 
     return (
-      <Menu pointing secondary vertical inverted>
-        <Menu.Item
-          name='tramitaciones'
-          active={  activeItem === 'tramitaciones'}
-          onClick={this.handleItemClick}
-        />
-        <Menu.Item
-          name='pagos'
-          active={activeItem === 'pagos'}
-          onClick={this.handleItemClick}
-        />
-      </Menu>
+      <div>
+        <Header as='h2' style = {{marginTop: 25}} inverted>
+          <Icon name='user circle' />
+          <Header.Content>
+            Government
+          </Header.Content>
+        </Header>
+        <Menu pointing secondary vertical inverted>
+          <Menu.Item
+            name='tramitaciones'
+            active={  activeItem === 'tramitaciones'}
+            onClick={this.handleItemClick}
+          />
+          <Menu.Item
+            name='pagos'
+            active={activeItem === 'pagos'}
+            onClick={this.handleItemClick}
+          />
+        </Menu>
+      </div>  
     )
   }
 }
