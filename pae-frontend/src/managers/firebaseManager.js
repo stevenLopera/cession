@@ -168,7 +168,7 @@ export function getInvoicesList(typeList){
             } 
 //ESTA HARDCODED PARA TESTEAR QUE FUNCIONA PILLANDO UNA UID DE UN USER
             var assigneeId = data.child("assigneeID").val();
-            if(assigneeId ==  "xwcZ5Q74wwSY5GsdqE6a908GHLA3"/*fire.auth().currentUser.uid*/){
+            if(assigneeId ==  "gFdUhs3AgHSiO1hgnEybCJZb4pA3"/*fire.auth().currentUser.uid*/){
                 toAssigneeList[l] = {
                     KKey: data.child("KKey").val(),
                     SCAddress: data.child("SCAddress").val(),
@@ -387,27 +387,27 @@ function getInvoiceByUserID(id, collection){
 */
 
 // ACME gets invoices in function of full signed invoices
-export function getFullSignedInvoicesList(){
+// export function getFullSignedInvoicesList(){
 
-    var list = []
+//     var list = []
 
-    var firebaseRef = firebase.database().ref();
-    return firebaseRef.once("value")
-        .then(function(snapshot) {
+//     var firebaseRef = firebase.database().ref();
+//     return firebaseRef.once("value")
+//         .then(function(snapshot) {
 
-        var i = 0
-        snapshot.child("signedInvoices/").forEach(function(data) {
-            var assigneSign = data.child("assigneeSign").val();
-            if(assigneSign != null){
-                list[i] = {
-                invoiceID : data.child("invoiceID").val(),
-                data : data.child("data").val(),
-                bankSign : data.child("bankSign").val(),
-                assigneSign : data.child("assigneeSign").val()
-                }
-                i++
-            }
-        });
-        return list;
-    });
-}
+//         var i = 0
+//         snapshot.child("signedInvoices/").forEach(function(data) {
+//             var assigneSign = data.child("assigneeSign").val();
+//             if(assigneSign != null){
+//                 list[i] = {
+//                 invoiceID : data.child("invoiceID").val(),
+//                 data : data.child("data").val(),
+//                 bankSign : data.child("bankSign").val(),
+//                 assigneSign : data.child("assigneeSign").val()
+//                 }
+//                 i++
+//             }
+//         });
+//         return list;
+//     });
+// }

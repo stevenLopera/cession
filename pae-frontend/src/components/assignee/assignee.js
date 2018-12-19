@@ -1,5 +1,7 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types'
+import {fire, database} from '../../config/fire';
+import { browserHistory } from "react-router";
 import {
   Button,
   Container,
@@ -171,7 +173,10 @@ class SideMenuVertical extends Component {
       this.props.changeMenuOption();
     }
   }
-
+  logout() {
+    fire.auth().signOut();
+    browserHistory.push("/login");
+  }  
   render() {
     const { activeItem } = this.state
 
@@ -185,15 +190,16 @@ class SideMenuVertical extends Component {
         </Header>
         <Menu pointing secondary vertical inverted>
           <Menu.Item
-            name='tramitar'
+            name='transact'
             active={  activeItem === 'tramitar'}
             onClick={this.handleItemClick}
           />
           <Menu.Item
-            name='consultar'
+            name='check'
             active={activeItem === 'consultar'}
             onClick={this.handleItemClick}
           />
+          <Button color = 'red' onClick = {this.logout}> Logout </Button> 
         </Menu>
       </div>
     )
@@ -291,6 +297,7 @@ class InvoiceForm extends Component {
 
   render() {
     return (
+      
       <Form>
         <Form.Field>
           <label>Invoice number</label>
@@ -432,7 +439,7 @@ class InvoiceSearch extends Component{
               <List.Item>
                 <List.Icon name='calendar alternate outline' />
                 <List.Content>
-                  Emission date: {this.state.selectedRequest.data.emisionDate}
+                  Emission date: {this.state.selectedRequest.data.emissionDate}
                 </List.Content>
               </List.Item>
               <List.Item>
@@ -442,15 +449,22 @@ class InvoiceSearch extends Component{
                 </List.Content>
               </List.Item>
               <List.Item>
-                <List.Icon name='balance scale'/>
+                <List.Icon name='calendar times outline' />
                 <List.Content>
-                  Bank Account: {this.state.selectedRequest.toCreditorAccount}
+                  Commision: 8%
                 </List.Content>
               </List.Item>
               <List.Item>
-                <List.Icon name='pen square'/>
+                <List.Icon name='balance scale'/>
                 <List.Content>
-                  Bank Signature: que pongo¿? {this.state.selectedRequest.toDebtorAccount /*firma bank?*/}
+                  Reciever account: {this.state.selectedRequest.toCreditorAccount}
+                </List.Content>
+              </List.Item>
+              <List.Item>
+                
+                <List.Content>
+                  Signed by bank:
+                  <List.Icon name='check'/>
                 </List.Content>
               </List.Item>
             </List>
@@ -498,7 +512,13 @@ class InvoiceSearch extends Component{
     this.closeModal()
     this.setState({showValidationMessage: true,
                     isInvoiceSigned: true})
-
+    var fromHere = 1
+    this.state.requests.indexOf(this.state.selectedRequest)
+    const list = this.state.requests.splice(fromHere, 3)
+    this.setState({
+      requests : list
+    })
+                   
     this.onRequestValidated()
   }
 
@@ -541,8 +561,8 @@ class InvoiceSearch extends Component{
       listItems = list.map((result) => 
         
         <List.Item style = {{minWidth: 250}} key= {result.data.invoiceID}>
-        {console.log(result)}
           <div id={result.data.invoiceID} onClick = {this.handleItemClick}>
+
             <Card
               as = 'a'
               header={result.data.invoiceID}
@@ -580,6 +600,12 @@ class InvoiceSearch extends Component{
             display: 'inline-block',
             textAlign: "left"
           }}>
+            <Header as='h2' style = {{marginTop: 25}}>
+              <Icon name='file outline' />
+              <Header.Content>
+                Signed invoices by a creditor
+              </Header.Content>
+            </Header>
             <List items = {listItems} />
             {this.state.selectedRequest !== {} ? this.showModal() : null}
             <div style = {{textAlign: ''}}>
