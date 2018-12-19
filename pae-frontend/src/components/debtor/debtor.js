@@ -303,7 +303,7 @@ class InvoiceForm extends Component {
     //var hash = keccak256.update(invoice);
 
     if (isAccepted) {
-      generateInvoiceHash(this.state.activeItem)
+     // generateInvoiceHash(this.state.activeItem)
       // todo call acceptInvoice(hash) 
     }
     
