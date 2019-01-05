@@ -2,6 +2,7 @@
 
 import  {fire}  from '../config/fire';
 import { auth } from 'firebase';
+import { generateKKey, generateRKey, generateBankKeyPairs, signMessage, checksign } from '../utils/crypto_hash_sign';
 
 
 
@@ -10,6 +11,17 @@ import { auth } from 'firebase';
 // Functions have to be exported in order to import them and call them in the components needed
 
 // example export declaration
+function addKeyPairByUserId(userId){
+    
+    var firebaseRef = fire.database().ref();
+    const keys = generateBankKeyPairs();
+    var updateUser =
+    {
+        publicKey: keys.publicKey,
+        secretKey: keys.secretKey
+    };
+        return firebaseRef.child("users/test").update(updateUser).then((data) => {return data});
+}
 
 export function uploadInvoice(data) {
     // dummy
@@ -103,19 +115,42 @@ export function getInvoiceByID(id){
     });
 }
 
+export function getPublicKey(){
+    let firebaseRef = fire.database().ref();
+    return firebaseRef.once("value")
+    .then(function(snapshot) {
+    return (snapshot.child(`constants/publicKey`).val())
+    });
+}
 
 // Creates invoice using assignee form
 export function createInvoice(invoice){
 
+    let claves = addKeyPairByUserId("")
+    console.log(claves)
+
     let invoiceID = invoice.invoiceNumber
+    let kKey = generateKKey()
+    let rKey = generateRKey(kKey)
+
+    let firebaseRef = fire.database().ref();
+    // let publicKey = getPublicKey().toString()
+    // console.log(publicKey)
+    // console.log(claves.publicKey)
+    // console.log(publicKey)
+    // if(claves.publicKey.localCompare(publicKey)== 0)
+    //     console.log("Correcto")
+    // else{
+    //     console.log("Falso")
+    // }
     
-    var firebaseRef = fire.database().ref();
-    var updateThis =
+
+    let updateThis =
     {
         assigneeID: fire.auth().currentUser.uid,
         // Data es el conjunto que se le envia al Gobierno
         data: {
-            RKey: invoice.RKey,
+            RKey: rKey,
             NIF: invoice.nif,
             amount: invoice.amount,
             invoiceID: invoiceID,
@@ -125,11 +160,11 @@ export function createInvoice(invoice){
         toDebtorAccount: invoice.toDebtorAccount,
         toCreditorAccount: invoice.toCreditorAccount,
         SCAddress: invoice.acmeSCAddress,
-        KKey: invoice.KKey,
+        KKey: kKey,
         debtorAuth: false
     };
     return firebaseRef.child("unsignedInvoices/" + invoiceID).update(updateThis).then((data) => {return data});
-     
+
 }
  
 // Debtor/Bank gets invoices in function of "s"(true","false")

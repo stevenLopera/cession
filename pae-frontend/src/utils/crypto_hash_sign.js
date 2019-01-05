@@ -14,14 +14,17 @@ let aes= new pidcrypt.AES.CBC();
 //-------------ASSIGNEE----------------------------------------------
 
 //genrerar k
-export function generateInvoiceK() {
+export function generateKKey() {
   let k = new TextDecoder("utf-8").decode(nacl.randomBytes(32));
-  k = toString(k);
-  return k
+  let hash = keccak256(k);
+
+  return hash;
 }
+
 // generar R
 export function generateRKey(keyK) {
-  return keccak256(keyK);
+  let r = keccak256(keyK);
+  return r;
 }
   
 // Envia off blockchain:
@@ -30,10 +33,11 @@ export function generateRKey(keyK) {
 //-------------DEBTOR/GENE----------------------------------------------
 // deploya en SC, pone el abi y @SC
 export function generateInvoiceHash(invoice){
-  let infoGene = invoice.data.NIF + invoice.data.amount + invoice.data.invoiceID + invoice.data.RKey + invoice.data.emissionDate + invoice.data.expirationDate;
+  let infoGene = invoice.NIF + invoice.amount + invoice.invoiceID + invoice.RKey + invoice.emissionDate + invoice.expirationDate;
   let hash = keccak256(infoGene);
   return toUint8Array(hash);
 }
+
 //  sube al SC con acceptInvoice(hash)
 
 //-------------ACME----------------------------------------------
@@ -45,6 +49,12 @@ export function generateInvoiceHash(invoice){
 //  hash = toUint8Array(hash);
 
  // compueba que la factura esta aceptadas con  containsInvoice(hash) del SC de la gene // devuelve booleano
+ export function generateBankKeyPairs() {
+  let clavesB = nacl.sign.keyPair(); // genera sus claves
+  clavesB.publicKey = clavesB.publicKey.toString();
+  clavesB.secretKey = clavesB.secretKey.toString();
+  return clavesB;
+}
 //  let clavesB= nacl.sign.keyPair(); // genera sus claves
   // envia off blockchain su clave publica (clavesB.publicKey) --->> ACME
 //-------------ASSIGNEE----------------------------------------------
@@ -60,9 +70,9 @@ export function generateIdAndNifHash(nif, id){
 }
   // llama a  containsPublicKeyBank(hash) // le devuelve la pk_b
   // comprobar la publica son su privada
-//   nacl.sign.open(pk_b,clavesB.secretKey)?
-//   console.log('correcto'):
-//   console.log('firma incorrecta');
+export function checksign(mensaje, publicKey){
+  nacl.sign.open(mensaje,new Uint8Array(publicKey))? console.log('firma correcta'): console.log('error')
+}
 
 // let infoB= NIF + nºdefactura + amount + amount_u +an_u + comi_AC +an_AC;
 // // encripta
@@ -70,8 +80,12 @@ export function generateIdAndNifHash(nif, id){
 // encrip =encrip + an_b;
 
 // // firma
-// let encrip_firmadoB=nacl.sign(toUint8Array(encrip), clavesB.secretKey);
-// //  envia  encrip_firmadoB a Assignee y Acme  OFF blockchain
+export function signMessage(txt, secretKey){
+  let encrip_firmadoB = nacl.sign(toUint8Array(txt), toUint8Array(secretKey));
+  let signed = toString(encrip_firmadoB)
+  return signed;
+}
+//  envia  encrip_firmadoB a Assignee y Acme  OFF blockchain
 
 
 // //-------------ASSIGNEE----------------------------------------------

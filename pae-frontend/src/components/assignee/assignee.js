@@ -23,8 +23,8 @@ import {
   GridRow,
   Form
 } from 'semantic-ui-react'  
-import { getAcmeSCAddress, createInvoice, getInvoicesList } from '../../managers/firebaseManager';
-import { generateInvoiceK, generateRKey } from '../../utils/crypto_hash_sign';
+import { getPublicKey, getAcmeSCAddress, createInvoice, getInvoicesList } from '../../managers/firebaseManager';
+import { generateBankKeyPairs} from '../../utils/crypto_hash_sign';
 
 class Assignee extends Component {
   render() {
@@ -49,12 +49,25 @@ class DesktopContainer extends Component {
 
   componentDidMount(){
     this.getAcmeAddress()
+    this.getaPublicKey()
   }
 
   getAcmeAddress() {
     getAcmeSCAddress().then((address) => {
       this.setState({acmeSCAddress: address})
       console.log(address)
+    })
+  }
+  getaPublicKey() {
+    getPublicKey().then((value) => {
+      let array = value.split(",");
+      let a = new Array();
+      array.forEach(function(num){
+        let b = new TextEncoder("utf-8").encode(num)
+        a.push(b)
+        console.log(typeof(b))
+      });
+      console.log("Esta es la public key: "+typeof(a), a);
     })
   }
  
@@ -251,7 +264,6 @@ class InvoiceForm extends Component {
     const value = event.value ? event.value : target.value
     const name = target.name;
     
-
     this.setState({
       [name]: value
     });
@@ -259,13 +271,9 @@ class InvoiceForm extends Component {
 
   handleSubmit(event) {
     //TODO: Upload invoice to the blockchain and Sign it
-    console.log(this.state)
-    
+  
     if(this.validateForm()){
-      this.setState({
-        KKey: generateInvoiceK(),
-        RKey: generateRKey()
-      })
+
       createInvoice(this.state).then(() => {
         window.alert('Successfully uploaded invoice')
       }).catch((error) => (console.error(error)))
@@ -362,7 +370,7 @@ class InvoiceForm extends Component {
             onChange = {this.handleChange}
           />
         </Form.Field>
-        <Button className='primary' type='submit' onClick = {this.handleSubmit}>Upload invoice</Button>
+        <Button className='primary' type='submit' onClick = {this.handleSubmit.bind(this)}>Upload invoice</Button>
       </Form>
     );
   }

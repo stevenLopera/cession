@@ -2,6 +2,8 @@ import React, { Component } from 'react';
 import {fire, database} from '../../config/fire';
 import { Button, Form, Grid, Header, Message, Segment } from 'semantic-ui-react';
 import { browserHistory } from "react-router";
+import { generateBankKeyPairs} from '../../utils/crypto_hash_sign';
+
 //import { BrowserRouter, Switch, Route } from 'react-router-dom';
 //import { connect } from 'react-redux';
 //import { signUp } from './trash/authActions';
@@ -88,7 +90,7 @@ class Register extends Component {
         
         var userRef = database.ref('users/' +user.uid);
         console.log(userRef);
-        
+        let claves = generateBankKeyPairs();
 
         const data = {
           uid: user.uid,
@@ -99,7 +101,11 @@ class Register extends Component {
               creditor: false,
               assignee: true,
               acme: false
-          }
+          },
+        //   attributes:{
+        //       publicKey: claves.publicKey,
+        //       secretKey: claves.secretKey
+        //   }
         }
     
         return userRef.set(data)

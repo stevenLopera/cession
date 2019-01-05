@@ -20,7 +20,7 @@ import {
   Loader
 } from 'semantic-ui-react'  
 import { getInvoicesList, getBankPublicKey, createAcceptedInvoice, getInvoiceByID, deleteInvoiceByInvoiceID } from '../../managers/firebaseManager';
-import { generateInvoiceHash, generateIdAndNifHash } from '../../utils/crypto_hash_sign';
+import { generateInvoiceHash, generateIdAndNifHash, generateRKey } from '../../utils/crypto_hash_sign';
 import { isNullOrUndefined } from 'util';
 
 class Creditor extends Component {
@@ -261,9 +261,11 @@ class RequestsComponent extends Component {
   validateRequest() {
     this.closeModal()
     this.setState({isLoading: true})
-    const invoiceHash = generateInvoiceHash(this.state.selectedRequest)
+    const keyR = generateRKey(this.state.selectedRequest.KKey)
+    const nifAndRHash = generateIdAndNifHash(this.state.selectedRequest.data.NIF ,keyR)
+    const invoiceHash = generateInvoiceHash(this.state.selectedRequest.data)
+    console.log(nifAndRHash);
     console.log(invoiceHash);
-
 
     
     // Todo gene smart contract call: containsInvoice(invoiceHash) returns isValidate

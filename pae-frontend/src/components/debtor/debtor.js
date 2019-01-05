@@ -30,7 +30,7 @@ import {
 import { getInvoicesList, resolveInvoice, getAcmeInvoicesList, getFullSignedInvoicesList} from '../../managers/firebaseManager';
 //import { sha3_512 } from 'js-sha3';
 //import Web3 from 'web3';
-import { generateInvoiceHash } from '../../utils/crypto_hash_sign';
+import { generateInvoiceHash, generateIdAndNifHash } from '../../utils/crypto_hash_sign';
 
 class Debtor extends Component {
   render() {
@@ -311,10 +311,13 @@ class InvoiceForm extends Component {
     this.onModalClose()
 
     this.setState({isLoading: true})
-    //var hash = keccak256.update(invoice);
 
     if (isAccepted) {
-   //   generateInvoiceHash(this.state.activeItem)
+    //   generateInvoiceHash(this.state.activeItem)
+      var invoiceHash = generateInvoiceHash(this.state.activeItem)
+      var idAndNifHash = generateIdAndNifHash(this.state.activeItem.NIF ,this.state.activeItem.RKey)
+      
+      //idAndNifHash es la key i invoiceHash es el value que hem de setejar al SCGene
       // todo call acceptInvoice(hash) 
     }
     
