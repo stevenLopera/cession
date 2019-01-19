@@ -26,7 +26,7 @@ export function generateRKey(keyK) {
   let r = keccak256(keyK);
   return r;
 }
-  
+
 // Envia off blockchain:
       //  - (invoice,R,an_u,@SC)  ---->  DEBTOR/ GENE
       //  - (invoice,k,an_u',term)  ----> ACME
@@ -51,8 +51,8 @@ export function generateInvoiceHash(invoice){
  // compueba que la factura esta aceptadas con  containsInvoice(hash) del SC de la gene // devuelve booleano
  export function generateBankKeyPairs() {
   let clavesB = nacl.sign.keyPair(); // genera sus claves
-  clavesB.publicKey = clavesB.publicKey.toString();
-  clavesB.secretKey = clavesB.secretKey.toString();
+  //clavesB.publicKey = clavesB.publicKey.toString();
+  //clavesB.secretKey = clavesB.secretKey.toString();
   return clavesB;
 }
 //  let clavesB= nacl.sign.keyPair(); // genera sus claves
@@ -81,7 +81,7 @@ export function checksign(mensaje, publicKey){
 
 // // firma
 export function signMessage(txt, secretKey){
-  let encrip_firmadoB = nacl.sign(toUint8Array(txt), toUint8Array(secretKey));
+  let encrip_firmadoB = nacl.sign(toUint8Array(txt), secretKey);
   let signed = toString(encrip_firmadoB)
   return signed;
 }
@@ -122,12 +122,13 @@ export function signMessage(txt, secretKey){
 
 // //-------------FUNCIONES UINT - STRING------------------------------------------
 // nacl pide y devuelve uint8array
-// aes.encryptText y keccak256 piden y devuelven strings
-function toUint8Array(s){
+// aes.encryptText(encriptar) y keccak256(hash) piden y devuelven strings
+export function toUint8Array(s){
   //Convert a string into a Uint8Array.
   return( new TextEncoder("utf-8").encode(s));
 }
-function toString(u){
+export function toString(u){
   // Convert an Uint8Array into a string.
+  //console.log('en toString'+ u+ 'en string'+ new TextDecoder("utf-8").decode(u))
   return ( new TextDecoder("utf-8").decode(u));
 }

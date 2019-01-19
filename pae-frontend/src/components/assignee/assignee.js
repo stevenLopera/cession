@@ -22,10 +22,10 @@ import {
   GridColumn,
   GridRow,
   Form
-} from 'semantic-ui-react'  
+} from 'semantic-ui-react'
 import { getPublicKey, getAcmeSCAddress, createInvoice, getInvoicesList } from '../../managers/firebaseManager';
-import { generateBankKeyPairs} from '../../utils/crypto_hash_sign';
-
+import { generateBankKeyPairs,toUint8Array,toString,signMessage,checksign} from '../../utils/crypto_hash_sign';
+import * as nacl from 'tweetnacl';
 class Assignee extends Component {
   render() {
     return <DesktopContainer/>;
@@ -47,10 +47,37 @@ class DesktopContainer extends Component {
     this.setState({isTramitShown : !this.state.isTramitShown})
   }
 
-  componentDidMount(){
-    this.getAcmeAddress()
-    this.getaPublicKey()
-  }
+   async componentDidMount(){
+  //  this.getAcmeAddress()
+      var firebaseRef = fire.database().ref()
+      // generar claves
+      let claves= nacl.sign.keyPair()
+      //firmar mensaje
+      console.log('tipos :'+typeof(toUint8Array('mensaje para firmar')) + '   ' +typeof(claves.secretKey)+ '   '+typeof(new Uint8Array(5))) 
+      let mensajeF=nacl.sign(toUint8Array('mensaje para firmar'),claves.secretKey)
+      console.log('antes de enviar a Firebase'+typeof(mensajeF)+   ':'+mensajeF)
+
+      //to FireBase
+      await firebaseRef.child('unsignedInvoices/7777777777/data').update({RKey: mensajeF})
+      //from  FireBase
+      let snapshot=await firebaseRef.once("value")
+       mensajeF=await  snapshot.child(`unsignedInvoices/7777777777/data/RKey`).val()
+       console.log(' La que devuelve Firebase'+typeof(mensajeF)+   ':'+mensajeF)
+       // comprabar firmar
+       mensajeF= new Uint8Array(mensajeF)
+       console.log('cambiado '+typeof(mensajeF)+   ':'+mensajeF)
+       nacl.sign.open(mensajeF,claves.publicKey)? console.log('correcto'):console.log('error')
+       // quitar firma
+       console.log( toString(mensajeF.slice(64,mensajeF.length)))
+     }
+
+
+    //this.getaPublicKey()
+  /*  console.log(firebaseRef.once("value")
+   .then(function(snapshot) {
+   return (snapshot.child(`unsignedInvoices`).val())
+ }));
+  }*/
 
   getAcmeAddress() {
     getAcmeSCAddress().then((address) => {
@@ -70,7 +97,7 @@ class DesktopContainer extends Component {
       console.log("Esta es la public key: "+typeof(a), a);
     })
   }
- 
+
   render() {
     const { children } = this.props
     const { visible } = this.state
@@ -189,7 +216,7 @@ class SideMenuVertical extends Component {
   logout() {
     fire.auth().signOut();
     browserHistory.push("/login");
-  }  
+  }
   render() {
     const { activeItem } = this.state
 
@@ -212,7 +239,7 @@ class SideMenuVertical extends Component {
             active={activeItem === 'consultar'}
             onClick={this.handleItemClick}
           />
-          <Button color = 'red' onClick = {this.logout}> Logout </Button> 
+          <Button color = 'red' onClick = {this.logout}> Logout </Button>
         </Menu>
       </div>
     )
@@ -258,12 +285,12 @@ class InvoiceForm extends Component {
 
   handleChange(event) {
 
-    console.log(event) 
+    console.log(event)
 
     const target = event.target;
     const value = event.value ? event.value : target.value
     const name = target.name;
-    
+
     this.setState({
       [name]: value
     });
@@ -271,7 +298,7 @@ class InvoiceForm extends Component {
 
   handleSubmit(event) {
     //TODO: Upload invoice to the blockchain and Sign it
-  
+
     if(this.validateForm()){
 
       createInvoice(this.state).then(() => {
@@ -289,8 +316,8 @@ class InvoiceForm extends Component {
   }
 
   validateForm(){
-    return(this.state.invoiceNumber && this.state.nif && this.state.amount && 
-      this.state.emissionDate && this.state.expirationDate && 
+    return(this.state.invoiceNumber && this.state.nif && this.state.amount &&
+      this.state.emissionDate && this.state.expirationDate &&
       this.state.toDebtorAccount && this.state.toCreditorAccount && this.isAccountsValid())
   }
 
@@ -305,7 +332,7 @@ class InvoiceForm extends Component {
 
   render() {
     return (
-      
+
       <Form>
         <Form.Field>
           <label>Invoice number</label>
@@ -318,7 +345,7 @@ class InvoiceForm extends Component {
         </Form.Field>
         <Form.Field>
           <label>CIF/NIF</label>
-          <input placeholder='11111111A' 
+          <input placeholder='11111111A'
             name = 'nif'
             type = 'text'
             value = {this.state.nif}
@@ -327,7 +354,7 @@ class InvoiceForm extends Component {
         </Form.Field>
         <Form.Field>
           <label>Total amount</label>
-          <input placeholder='150.5' 
+          <input placeholder='150.5'
             name = 'amount'
             type = 'number'
             value = {this.state.amount}
@@ -382,7 +409,7 @@ class InvoiceForm extends Component {
 //
 //
 //
-//Consultar 
+//Consultar
 //
 //
 //
@@ -406,7 +433,7 @@ class InvoiceSearch extends Component{
       isLoading: true,
       requests: [],
       hasSelectedRequest: false
-    } 
+    }
     this.getRequests = this.getRequests.bind(this)
   }
 
@@ -427,7 +454,7 @@ class InvoiceSearch extends Component{
   handleItemClick = (event) => {
     // Only way found to detect the element clicked
     const activeItemName = event.target.parentNode.parentNode.id
-    
+
     const activeItem = this.state.requests.find((item) => (item.data.invoiceID === activeItemName))
     this.setState({
       selectedRequest: activeItem,
@@ -469,7 +496,7 @@ class InvoiceSearch extends Component{
                 </List.Content>
               </List.Item>
               <List.Item>
-                
+
                 <List.Content>
                   Signed by bank:
                   <List.Icon name='check'/>
@@ -485,7 +512,7 @@ class InvoiceSearch extends Component{
   showModal() {
     console.log(this.state.selectedRequest);
 
-    if(this.state.selectedRequest) {      
+    if(this.state.selectedRequest) {
       return (
         <Modal
           open = {this.state.showModal}
@@ -515,7 +542,7 @@ class InvoiceSearch extends Component{
   }
 
 
-  
+
   signInvoice() {
     this.closeModal()
     this.setState({showValidationMessage: true,
@@ -526,7 +553,7 @@ class InvoiceSearch extends Component{
     this.setState({
       requests : list
     })
-                   
+
     this.onRequestValidated()
   }
 
@@ -541,12 +568,12 @@ class InvoiceSearch extends Component{
   onRequestValidated() {
       // Todo smart contract call: containsPublicKeyBank(hash(public_key))
       // if true:
-      // 
+      //
       // this.setState({showValidationMessage: true,
       //                isInvoiceSigned: true})
 
   }
- 
+
   /*rejectRequest(request) {
     this.closeModal()
     this.setState({showValidationMessage: true,
@@ -565,9 +592,9 @@ class InvoiceSearch extends Component{
     if (this.state.requests) {
       const list = this.state.requests
       console.log(this.state.requests);
-      
-      listItems = list.map((result) => 
-        
+
+      listItems = list.map((result) =>
+
         <List.Item style = {{minWidth: 250}} key= {result.data.invoiceID}>
           <div id={result.data.invoiceID} onClick = {this.handleItemClick}>
 
@@ -575,7 +602,7 @@ class InvoiceSearch extends Component{
               as = 'a'
               header={result.data.invoiceID}
               id = {result.data.invoiceID}
-            />  
+            />
           </div>
         </List.Item>
       )
@@ -595,15 +622,15 @@ class InvoiceSearch extends Component{
       )
 
       return(
-        
+
         <div>
-          {this.state.isLoading ? 
+          {this.state.isLoading ?
           <Dimmer active>
             <Loader></Loader>
           </Dimmer>
         :
         null}
-          {this.state.hasRequests ? 
+          {this.state.hasRequests ?
           <div style = {{
             display: 'inline-block',
             textAlign: "left"
@@ -634,7 +661,7 @@ class SignInvoiceComponent extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    this.setState({ isSigned: nextProps.isSigned });  
+    this.setState({ isSigned: nextProps.isSigned });
   }
 
   sendOffer() {
@@ -662,7 +689,7 @@ class SignInvoiceComponent extends Component {
 
 
   render() {
-    
+
     const MessageValidatedRequest = () => (
       <div style = {{marginTop: 30}}>
         <Message
@@ -674,7 +701,7 @@ class SignInvoiceComponent extends Component {
         />
       </div>
     )
-    
+
     const MessageNotValidatedRequest = () => (
       <Message
         icon='cancel'
